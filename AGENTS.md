@@ -31,7 +31,7 @@ uv pip install -e ".[dev]"
 | `pyproject.toml` | 项目配置，入口点 `lit = "lit.main:app"` |
 | `requirements.txt` | Python 依赖列表 |
 | `.gitignore` | Git 忽略规则，排除虚拟环境、缓存、本地配置和运行时数据 |
-| `.env.example` | 环境变量模板，含 `OPENAI_API_KEY`、`PAPERCLI_DATA_DIR` 等 |
+| `.litcli/auth.example.json` | JSON 配置模板，含 OpenAI 认证和 `LITCLI_DATA_DIR` 等 |
 | `.venv/` | uv 虚拟环境（不提交） |
 
 ### `ng/` — 核心业务逻辑
@@ -67,7 +67,8 @@ uv pip install -e ".[dev]"
 | 路径 | 描述 |
 |------|------|
 | `lit/__init__.py` | CLI package init |
-| `lit/main.py` | typer app 入口，加载 `.env`、初始化数据库、注册所有子命令 |
+| `lit/config.py` | JSON 配置加载，支持用户级与项目级 `auth.json` |
+| `lit/main.py` | typer app 入口，加载用户级与项目级配置、初始化数据库、注册所有子命令 |
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
 | `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Collection 序列化 |
 | `lit/commands/__init__.py` | 子命令共享 helper：service 初始化、ID 解析、错误输出 |

@@ -603,7 +603,6 @@ class DatabaseHealthService:
                 "beautifulsoup4": "bs4",
                 "pypdf2": "PyPDF2",
                 "python-levenshtein": "Levenshtein",
-                "python-dotenv": "dotenv",
             }
 
             # Read dependencies from requirements.txt

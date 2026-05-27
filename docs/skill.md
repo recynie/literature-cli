@@ -87,7 +87,7 @@ lit show 42 --json
 
 # 获取 PDF 路径，供后续处理
 lit pdf path 42 --json
-# 返回: { "ok": true, "path": "/home/user/.papercli/pdfs/vaswani2017attention.pdf" }
+# 返回: { "ok": true, "path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf" }
 ```
 
 ### Pattern 5：批量导入文献库
@@ -119,7 +119,7 @@ lit add bib ./exported_refs.bib --json
   "preprint_id": "arXiv 1706.03762",
   "category": "cs.CL",
   "url": "https://arxiv.org/abs/1706.03762",
-  "pdf_path": "/home/user/.papercli/pdfs/vaswani2017attention.pdf",
+  "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
   "collections": ["transformers", "to-read"],
   "added_date": "2024-01-01T00:00:00"
 }

@@ -18,7 +18,8 @@
 pip install -e .
 
 # 配置 OpenAI API key（PDF 元数据提取需要）
-export OPENAI_API_KEY=your_key_here
+mkdir -p ~/.config/litcli
+cp .litcli/auth.example.json ~/.config/litcli/auth.json
 
 # 导入一篇论文
 lit add arxiv 1706.03762
@@ -45,16 +46,24 @@ lit export --format bibtex --collection "my-papers"
 | `lit/` CLI 层 | 🔲 待实现 |
 | `skills/literature-cli/` | 🔲 待实现 |
 
-## 环境变量
+## 配置
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `OPENAI_API_KEY` | — | 必填，PDF 元数据提取 |
 | `OPENAI_MODEL` | `gpt-4o-mini` | LLM 模型 |
-| `PAPERCLI_DATA_DIR` | `~/.papercli` | 数据目录 |
-| `PAPERCLI_PDF_PAGES` | `10` | PDF 提取页数 |
+| `LITCLI_DATA_DIR` | `~/.litcli` | 数据目录 |
+| `LITCLI_PDF_PAGES` | `10` | PDF 提取页数 |
 
-参考 `.env.example` 配置。
+参考 `.litcli/auth.example.json` 配置。
+
+配置加载优先级：
+
+1. 已导出的环境变量，例如 `export OPENAI_API_KEY=...`
+2. 当前目录或父目录中的项目级 `.litcli/auth.json`
+3. 用户级 `~/.config/litcli/auth.json`
+
+`uv tool install` 后从任意目录运行 `lit` 时，推荐使用用户级配置文件。
 
 ## 来源
 

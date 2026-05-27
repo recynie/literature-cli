@@ -9,8 +9,8 @@ from io import StringIO
 from pathlib import Path
 
 import typer
-from dotenv import load_dotenv
 
+from lit.config import load_config_files
 from lit.logger import CliLogger
 from lit.commands import add, collect, db, delete, edit, export, list, pdf, search, show
 from ng.db.database import init_database
@@ -20,7 +20,7 @@ app = typer.Typer(help="Agent-oriented research paper management CLI.")
 
 
 def _default_db_path() -> str:
-    data_dir = Path(os.getenv("PAPERCLI_DATA_DIR", "~/.papercli")).expanduser()
+    data_dir = Path(os.getenv("LITCLI_DATA_DIR", "~/.litcli")).expanduser()
     data_dir.mkdir(parents=True, exist_ok=True)
     return str(data_dir / "papers.db")
 
@@ -31,7 +31,7 @@ def main(
     json: bool = typer.Option(False, "--json", help="Output JSON by default."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logs."),
 ):
-    load_dotenv()
+    load_config_files()
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.WARNING,
         format="%(levelname)s:%(name)s:%(message)s",

@@ -1,5 +1,5 @@
 """
-Centralized constants for the PaperCLI application.
+Centralized constants for the LiteratureCLI application.
 All default values for environment variables and configuration should be defined here.
 """
 

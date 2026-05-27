@@ -23,7 +23,7 @@ dist/
 # Local configuration and secrets
 .env
 .env.*
-!.env.example
+.litcli/auth.json
 
 # Local databases and runtime data
 *.db

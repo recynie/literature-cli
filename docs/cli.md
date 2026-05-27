@@ -36,7 +36,7 @@ lit --help
     "doi": "...",
     "preprint_id": "arXiv 1706.03762",
     "url": "https://arxiv.org/abs/1706.03762",
-    "pdf_path": "/home/user/.papercli/pdfs/vaswani2017attention.pdf",
+    "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
     "collections": ["transformers", "to-read"],
     "added_date": "2024-01-01T00:00:00"
   }

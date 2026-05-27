@@ -642,7 +642,7 @@ class MetadataExtractor:
                     return ""
 
                 # Extract text from first N pages to stay within token limits (configurable)
-                max_pages = int(os.getenv("PAPERCLI_PDF_PAGES", str(constants.DEFAULT_PDF_SUMMARY_PAGES)))
+                max_pages = int(os.getenv("LITCLI_PDF_PAGES", str(constants.DEFAULT_PDF_SUMMARY_PAGES)))
                 pages_to_extract = min(max_pages, len(pdf_reader.pages))
                 full_text = ""
 

@@ -42,7 +42,8 @@ LiteratureCLI/
 │       └── SKILL.md            # pi skill 定义（待实现）
 ├── docs/                       # 文档
 ├── references/                 # 参考项目（papercli 原始代码，只读）
-├── .env.example                # 环境变量示例
+├── .litcli/
+│   └── auth.example.json       # JSON 配置示例
 ├── requirements.txt            # Python 依赖
 └── pyproject.toml              # 项目配置
 ```
@@ -62,7 +63,8 @@ LiteratureCLI/
   - `PaperAuthor`：Paper-Author 关联对象，记录作者顺序 position
 - `database.py`：SQLite 连接管理，提供 `get_db_session()` context manager
 
-数据存储路径默认 `~/.papercli/`，可通过 `PAPERCLI_DATA_DIR` 环境变量覆盖。
+数据存储路径默认 `~/.litcli/`，可通过 `LITCLI_DATA_DIR` 环境变量或 JSON 配置覆盖。
+CLI 启动时会读取用户级 `~/.config/litcli/auth.json` 和当前目录或父目录中的项目级 `.litcli/auth.json`。
 
 ### `ng/alembic/` — Schema 迁移
 
@@ -176,7 +178,15 @@ class CliLogger:
 
 ---
 
-## 环境变量
+## 配置
+
+CLI 启动时按以下优先级加载配置，后者作为默认值，前者覆盖后者：
+
+1. 已导出的环境变量，例如 `export OPENAI_API_KEY=...`
+2. 当前目录或父目录中的项目级 `.litcli/auth.json`
+3. 用户级 `~/.config/litcli/auth.json`
+
+JSON 配置示例见 `.litcli/auth.example.json`。
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
@@ -184,8 +194,8 @@ class CliLogger:
 | `OPENAI_MODEL` | `gpt-4o-mini` | LLM 模型 |
 | `OPENAI_MAX_TOKENS` | `4000` | 最大输出 token |
 | `OPENAI_TEMPERATURE` | `0.7` | 温度（元数据提取强制为 0）|
-| `PAPERCLI_DATA_DIR` | `~/.papercli` | 数据目录（数据库 + PDF）|
-| `PAPERCLI_PDF_PAGES` | `10` | PDF 元数据提取读取页数 |
+| `LITCLI_DATA_DIR` | `~/.litcli` | 数据目录（数据库 + PDF）|
+| `LITCLI_PDF_PAGES` | `10` | PDF 元数据提取读取页数 |
 
 ---
 
@@ -200,7 +210,7 @@ ng/services/add_paper.py | search.py | export.py ...
     ↓ 元数据提取
 ng/services/metadata.py  ←→  外部 API / LLM
     ↓ 数据库读写
-ng/db/database.py + models.py  →  ~/.papercli/papers.db
+ng/db/database.py + models.py  →  ~/.litcli/papers.db
     ↓ PDF 文件操作
-ng/services/pdf.py  →  ~/.papercli/pdfs/
+ng/services/pdf.py  →  ~/.litcli/pdfs/
 ```
