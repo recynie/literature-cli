@@ -857,7 +857,11 @@ class MetadataExtractor:
                 metadata = {
                     "title": entry.get("title", "") or entry.get("primary_title", ""),
                     "abstract": entry.get("abstract", ""),
-                    "year": int(entry.get("year")) if entry.get("year") else None,
+                    "year": (
+                        int(entry.get("year"))
+                        if entry.get("year", "").strip().isdigit()
+                        else None
+                    ),
                     "venue_full": entry.get("journal_name", "")
                     or entry.get("secondary_title", ""),
                     "venue_acronym": entry.get("alternate_title1", ""),

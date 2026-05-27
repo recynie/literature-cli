@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import traceback
 from datetime import datetime
@@ -645,6 +646,17 @@ class AddPaperService:
 
     def add_doi_paper(self, doi: str) -> Dict[str, Any]:
         """Add a paper from DOI."""
+        # arXiv registers DOIs under the 10.48550 prefix; Crossref doesn't index them.
+        # Detect this prefix and route to the arXiv importer instead.
+        doi_clean = doi.strip()
+        if doi_clean.startswith("http"):
+            m = re.search(r"10\.\d+/[^\s]+", doi_clean)
+            doi_clean = m.group(0) if m else doi_clean
+        if doi_clean.lower().startswith("10.48550/arxiv."):
+            arxiv_id = doi_clean.split("/", 1)[1]  # e.g. "arXiv.2301.00001" → strip prefix
+            arxiv_id = arxiv_id.split(".", 1)[1] if "." in arxiv_id else arxiv_id
+            return self.add_arxiv_paper(arxiv_id)
+
         # Extract metadata from DOI using Crossref API
         metadata = self.metadata_extractor.extract_from_doi(doi)
 

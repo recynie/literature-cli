@@ -64,6 +64,14 @@ def export_to_bibtex(papers: List[Paper]) -> str:
 
             if paper.category:
                 entry["eprintclass"] = paper.category
+        elif is_preprint and paper.url:
+            arxiv_id = _extract_arxiv_id_from_url(paper.url)
+            if arxiv_id:
+                entry["eprint"] = arxiv_id
+                entry["eprinttype"] = "arxiv"
+
+                if paper.category:
+                    entry["eprintclass"] = paper.category
 
         if paper.volume:
             entry["volume"] = str(paper.volume)
@@ -337,6 +345,14 @@ def _extract_first_significant_word(title: str) -> str:
     return "untitled"
 
 
+def _extract_arxiv_id_from_url(url: str) -> str:
+    """Extract arXiv ID from a URL like https://arxiv.org/abs/2505.15134."""
+    if not url:
+        return ""
+    match = re.search(r"arxiv\.org/(?:abs|pdf)/([\d.]+(?:v\d+)?)", url)
+    return match.group(1) if match else ""
+
+
 def _is_preprint(paper) -> bool:
     """Determine if paper is a preprint."""
     if paper.paper_type and paper.paper_type.lower() in ["preprint", "arxiv"]:
@@ -349,6 +365,9 @@ def _is_preprint(paper) -> bool:
         return True
 
     if paper.venue_full and "arxiv" in paper.venue_full.lower():
+        return True
+
+    if paper.url and "arxiv.org" in paper.url.lower():
         return True
 
     return False

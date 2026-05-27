@@ -332,6 +332,9 @@ class PaperService:
 
             paper = Paper()
             for key, value in paper_data.items():
+                # Skip 'authors' — it's an ORM relationship managed via PaperAuthor below
+                if key == "authors":
+                    continue
                 if hasattr(paper, key) and value is not None:
                     setattr(paper, key, value)
 
