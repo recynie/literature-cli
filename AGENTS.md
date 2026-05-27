@@ -43,6 +43,7 @@ uv pip install -e ".[dev]"
 | `ng/db/models.py` | SQLAlchemy ORM 模型：Paper、Author、Collection、PaperAuthor |
 | `ng/db/database.py` | SQLite 连接管理，`get_db_session()` context manager |
 | `ng/alembic/` | Alembic schema 迁移脚本，含 4 个版本 |
+| `ng/services/arxiv_utils.py` | arXiv 标识符集中处理：ID 清洗、从 Paper 提取 ID、判断是否 arXiv 论文、构建 PDF URL |
 | `ng/services/metadata.py` | 元数据提取：arXiv API、DBLP、OpenReview、DOI/Crossref、PDF（LLM）、BibTeX、RIS |
 | `ng/services/add_paper.py` | 各来源论文导入逻辑，调用 metadata.py 和 pdf.py |
 | `ng/services/paper.py` | 论文 CRUD |

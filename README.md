@@ -73,4 +73,4 @@ lit export --format bibtex --collection "my-papers"
 
 ## 来源
 
-服务层和数据库层移植自 [papercli](https://github.com/SXKDZ/papercli)（MIT License），移除了 TUI、同步、chat 等功能，保留核心文献管理逻辑。原始代码保留在 `references/papercli/` 供参考。
+服务层和数据库层移植自 [papercli](https://github.com/SXKDZ/papercli)（MIT License），移除了 TUI、同步、chat 等功能，保留核心文献管理逻辑。
