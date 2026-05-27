@@ -1,0 +1,717 @@
+from __future__ import annotations
+
+import hashlib
+import os
+import re
+import secrets
+import shutil
+import time
+import traceback
+from typing import Any, Callable, Dict, Optional, Tuple
+
+import PyPDF2
+from ng.db.database import get_pdf_directory
+from ng.services import MetadataExtractor, format_file_size, http_utils
+from pluralizer import Pluralizer
+
+
+class PDFService:
+    """Centralized service for PDF operations including download, copy, and info management."""
+
+    def __init__(self, app):
+        self.pdf_dir = get_pdf_directory()
+        self.app = app
+        self._pluralizer = Pluralizer()
+
+    def get_pdf_page_count(self, pdf_path: str) -> int:
+        """Get page count from PDF file."""
+        try:
+            with open(pdf_path, "rb") as file:
+                pdf_reader = PyPDF2.PdfReader(file)
+                return len(pdf_reader.pages)
+        except Exception:
+            return 0
+
+    def format_download_duration(self, duration_seconds: float) -> str:
+        """Format download duration in human readable format."""
+        if duration_seconds < 60:
+            return f"{duration_seconds:.1f} seconds"
+        else:
+            minutes = int(duration_seconds // 60)
+            seconds = duration_seconds % 60
+            return f"{self._pluralizer.pluralize('minute', minutes, True)} {seconds:.0f} seconds"
+
+    def create_download_summary(self, pdf_path: str, duration_seconds: float) -> str:
+        """Create a summary string for download completion notification."""
+        try:
+            if not os.path.exists(pdf_path):
+                return "Download completed"
+
+            file_size = os.path.getsize(pdf_path)
+            size_formatted = format_file_size(file_size)
+            duration_formatted = self.format_download_duration(duration_seconds)
+            page_count = self.get_pdf_page_count(pdf_path)
+
+            if page_count > 0:
+                pages_text = self._pluralizer.pluralize("page", page_count, True)
+                return f"Download completed: {size_formatted}, {duration_formatted}, {pages_text}"
+            else:
+                return f"Download completed: {size_formatted}, {duration_formatted}"
+        except Exception:
+            return "Download completed"
+
+
+class PDFManager:
+    """Service for managing PDF files with smart naming and handling."""
+
+    def __init__(self, app=None):
+        self.pdf_dir = get_pdf_directory()
+        self.app = app
+
+    def get_absolute_path(self, relative_path: str) -> str:
+        """Convert a relative PDF path to absolute path."""
+        if not relative_path:
+            return ""
+
+        # If path is already absolute, return as-is (for backward compatibility)
+        if os.path.isabs(relative_path):
+            return relative_path
+
+        # Convert relative path to absolute
+        return os.path.join(self.pdf_dir, relative_path)
+
+    def get_relative_path(self, absolute_path: str) -> str:
+        """Convert an absolute PDF path to relative path."""
+        if not absolute_path:
+            return ""
+
+        # If path is already relative, return as-is
+        if not os.path.isabs(absolute_path):
+            return absolute_path
+
+        # Convert absolute path to relative
+        try:
+            return os.path.relpath(absolute_path, self.pdf_dir)
+        except ValueError:
+            # If path is outside pdf_dir, just return the filename
+            return os.path.basename(absolute_path)
+
+    def get_pdf_info(self, relative_path: str) -> Dict[str, Any]:
+        """Get PDF file information including size and page count."""
+        info = {
+            "exists": False,
+            "size_bytes": 0,
+            "size_formatted": "Unknown",
+            "page_count": 0,
+            "error": None,
+        }
+
+        if not relative_path:
+            info["error"] = "No PDF path provided"
+            return info
+
+        absolute_path = self.get_absolute_path(relative_path)
+
+        if not os.path.exists(absolute_path):
+            info["error"] = "PDF file not found"
+            return info
+
+        try:
+            # Get file size
+            file_size = os.path.getsize(absolute_path)
+            info["size_bytes"] = file_size
+            info["exists"] = True
+
+            # Format file size
+            info["size_formatted"] = format_file_size(file_size)
+
+            # Get page count using PyPDF2
+            try:
+                with open(absolute_path, "rb") as file:
+                    pdf_reader = PyPDF2.PdfReader(file)
+                    info["page_count"] = len(pdf_reader.pages)
+            except Exception as e:
+                info["error"] = f"Could not read PDF: {str(e)}"
+                # Still return file size even if page count fails
+
+        except Exception as e:
+            info["error"] = f"Error accessing PDF file: {str(e)}"
+
+        return info
+
+    def _generate_pdf_filename(self, paper_data: Dict[str, Any], pdf_path: str) -> str:
+        """Generate a smart filename for the PDF based on paper metadata."""
+        # Extract first author last name
+        authors = paper_data.get("authors", [])
+        if authors and isinstance(authors[0], str):
+            first_author = authors[0]
+            # Extract last name (assume last word is surname)
+            author_lastname = first_author.split()[-1].lower()
+            # Remove non-alphanumeric characters
+            author_lastname = re.sub(r"[^\w]", "", author_lastname)
+        else:
+            author_lastname = "unknown"
+
+        # Extract year
+        year = paper_data.get("year", "nodate")
+
+        # Extract first significant word from title
+        title = paper_data.get("title", "untitled")
+        # Split into words and find first significant word (length > 3, not common words)
+        common_words = {
+            "the",
+            "and",
+            "for",
+            "are",
+            "but",
+            "not",
+            "you",
+            "all",
+            "can",
+            "had",
+            "her",
+            "was",
+            "one",
+            "our",
+            "out",
+            "day",
+            "get",
+            "has",
+            "him",
+            "his",
+            "how",
+            "its",
+            "may",
+            "new",
+            "now",
+            "old",
+            "see",
+            "two",
+            "who",
+            "boy",
+            "did",
+            "man",
+            "run",
+            "say",
+            "she",
+            "too",
+            "use",
+        }
+        words = re.findall(r"\b[a-zA-Z]+\b", title.lower())
+        first_word = "untitled"
+        for word in words:
+            if len(word) > 3 and word not in common_words:
+                first_word = word
+                break
+
+        # Generate short hash from file content only
+        try:
+            if os.path.exists(pdf_path):
+                # Hash from file content
+                with open(pdf_path, "rb") as f:
+                    content = f.read(8192)  # Read first 8KB for hash
+                    file_hash = hashlib.md5(content).hexdigest()[:6]
+            else:
+                # For non-existent files (URLs), use a placeholder that will be replaced
+                # when the file is actually downloaded and processed
+                file_hash = "temp00"
+        except Exception:
+            # Fallback to random hash
+            file_hash = secrets.token_hex(3)
+
+        # Combine all parts
+        filename = f"{author_lastname}{year}{first_word}_{file_hash}.pdf"
+
+        # Ensure filename is filesystem-safe
+        filename = re.sub(r"[^\w\-._]", "", filename)
+
+        return filename
+
+    def process_pdf_path(
+        self, pdf_input: str, paper_data: Dict[str, Any], old_pdf_path: str = None
+    ) -> Tuple[str, str]:
+        """
+        Process PDF input (local file, URL, or invalid) and return the final relative path.
+
+        Returns:
+            tuple[str, str]: (relative_pdf_path, error_message)
+            If successful: (relative_path, "")
+            If error: ("", error_message)
+        """
+        if not pdf_input or not pdf_input.strip():
+            return "", "PDF path cannot be empty"
+
+        pdf_input = pdf_input.strip()
+
+        # Determine input type
+        is_url = pdf_input.startswith(("http://", "https://"))
+        is_local_file = os.path.exists(pdf_input) and os.path.isfile(pdf_input)
+
+        if not is_url and not is_local_file:
+            return (
+                "",
+                f"Invalid PDF input: '{pdf_input}' is neither a valid file path nor a URL",
+            )
+
+        try:
+            if is_local_file:
+                # Generate target filename
+                target_filename = self._generate_pdf_filename(paper_data, pdf_input)
+                target_path = os.path.join(self.pdf_dir, target_filename)
+
+                # Copy local file to PDF directory
+                # Check if source and destination are the same file
+                if os.path.abspath(pdf_input) == os.path.abspath(target_path):
+                    # File is already in the right place, no need to copy
+                    relative_path = os.path.relpath(target_path, self.pdf_dir)
+                    return relative_path, ""
+
+                shutil.copy2(pdf_input, target_path)
+
+                # Clean up old PDF only after successful copy
+                if (
+                    old_pdf_path
+                    and os.path.exists(old_pdf_path)
+                    and old_pdf_path != target_path
+                ):
+                    os.remove(old_pdf_path)
+
+                # Return relative path from PDF directory
+                relative_path = os.path.relpath(target_path, self.pdf_dir)
+                return relative_path, ""
+
+            elif is_url:
+                # Download URL to PDF directory with proper naming
+                new_path, error, duration = (
+                    self.download_pdf_from_url_with_proper_naming(pdf_input, paper_data)
+                )
+
+                if not error:
+                    # Clean up old PDF only after successful download
+                    if (
+                        old_pdf_path
+                        and os.path.exists(old_pdf_path)
+                        and old_pdf_path != new_path
+                    ):
+                        os.remove(old_pdf_path)
+
+                    # Return relative path from PDF directory
+                    relative_path = os.path.relpath(new_path, self.pdf_dir)
+                    return relative_path, error
+
+                return "", error
+
+        except Exception as e:
+            return "", f"Error processing PDF: {str(e)}"
+
+    def download_pdf_from_url_with_proper_naming(
+        self, url: str, paper_data: Dict[str, Any]
+    ) -> Tuple[str, str, float]:
+        """
+        Download PDF from URL with proper temp->final naming pattern.
+
+        This function:
+        1. Generates a temporary filename with random hash
+        2. Downloads PDF to temp location
+        3. Generates final filename based on content hash
+        4. Renames to final location
+
+        Returns:
+            tuple[str, str, float]: (final_pdf_absolute_path, error_message, download_duration_seconds)
+            Note: This returns absolute path for internal use. The calling method converts to relative.
+        """
+        try:
+            self.app._add_log(
+                "pdf_manager_start",
+                f"PDFManager.download_pdf_from_url_with_proper_naming called with url='{url}'",
+            )
+            self.app._add_log("pdf_naming_data", f"Paper data for naming: {paper_data}")
+
+            start_time = time.time()
+
+            # Generate temporary filename with random hash
+            temp_hash = secrets.token_hex(3)
+            author_lastname = "unknown"
+            year = "0000"
+            first_word = "paper"
+
+            if paper_data.get("authors"):
+                if isinstance(paper_data["authors"], list) and paper_data["authors"]:
+                    author_lastname = paper_data["authors"][0].split()[-1].lower()[:10]
+            if paper_data.get("year"):
+                year = str(paper_data["year"])
+            if paper_data.get("title"):
+                words = paper_data["title"].lower().split()
+                first_word = next((w for w in words if len(w) > 3), "paper")[:10]
+
+            temp_filename = f"{author_lastname}{year}{first_word}_{temp_hash}.pdf"
+            temp_filename = re.sub(r"[^\w\-._]", "", temp_filename)
+            temp_filepath = os.path.join(self.pdf_dir, temp_filename)
+
+            self.app._add_log(
+                "pdf_filename_generation",
+                f"Generated temp filename: {temp_filename}",
+            )
+
+            # Download to temporary path
+            self.app._add_log("pdf_download_init", "Starting download to temp path...")
+            downloaded_path, error = self._download_pdf_from_url(url, temp_filepath)
+            download_duration = time.time() - start_time
+
+            self.app._add_log(
+                "pdf_manager_result",
+                f"Download result: downloaded_path='{downloaded_path}', error='{error}'",
+            )
+
+            if error:
+                self.app._add_log("pdf_manager_error", f"PDF download failed: {error}")
+                return "", error, download_duration
+
+            self.app._add_log(
+                "pdf_manager_success",
+                f"PDF downloaded successfully to: {downloaded_path}",
+            )
+
+            # Generate final filename with content-based hash
+            self.app._add_log(
+                "pdf_filename_final",
+                "Generating final filename based on content...",
+            )
+            final_filename = self._generate_pdf_filename(paper_data, downloaded_path)
+            final_filepath = os.path.join(self.pdf_dir, final_filename)
+
+            self.app._add_log("pdf_filename_final", f"Final filename: {final_filename}")
+            self.app._add_log("pdf_path_final", f"Final filepath: {final_filepath}")
+
+            # Rename to final location if needed
+            if temp_filepath != final_filepath:
+                self.app._add_log(
+                    "pdf_file_rename", "Renaming from temp to final location..."
+                )
+                try:
+                    shutil.move(temp_filepath, final_filepath)
+                    self.app._add_log(
+                        "pdf_manager_success",
+                        f"Successfully renamed to: {final_filepath}",
+                    )
+                    return final_filepath, "", download_duration
+                except Exception as e:
+                    # If move fails, keep the temporary file
+                    warning_msg = f"Warning: Could not rename to final filename: {e}"
+                    self.app._add_log("pdf_manager_warning", warning_msg)
+                    return temp_filepath, warning_msg, download_duration
+            else:
+                self.app._add_log(
+                    "pdf_file_status",
+                    "Temp and final paths are the same, no rename needed",
+                )
+
+            return downloaded_path, "", download_duration
+
+        except Exception as e:
+            download_duration = (
+                time.time() - start_time if "start_time" in locals() else 0.0
+            )
+            error_msg = f"Error in PDF download with proper naming: {str(e)}"
+            self.app._add_log(
+                "pdf_manager_exception",
+                f"Exception in download_pdf_from_url_with_proper_naming: {error_msg}",
+            )
+            self.app._add_log(
+                "pdf_manager_traceback", f"Traceback: {traceback.format_exc()}"
+            )
+            return "", error_msg, download_duration
+
+    def _download_pdf_from_url(self, url: str, target_path: str) -> Tuple[str, str]:
+        """Download PDF from URL to target path using http_utils."""
+        try:
+            self.app._add_log("http_request_start", f"Starting HTTP request to: {url}")
+
+            request_start = time.time()
+            response = http_utils.get(url, timeout=60, stream=True)
+            request_duration = time.time() - request_start
+
+            self.app._add_log(
+                "http_request_timing",
+                f"HTTP request completed in {request_duration:.2f} seconds",
+            )
+            headers = dict(response.headers)
+            content_type = headers.get("content-type", "unknown")
+            content_length = headers.get("content-length", "unknown")
+            self.app._add_log(
+                "http_response",
+                f"HTTP response: {response.status_code}, Type: {content_type}, Size: {content_length}",
+            )
+
+            # Check if content is actually a PDF
+            content_type = response.headers.get("content-type", "").lower()
+
+            if "pdf" not in content_type:
+                self.app._add_log(
+                    "http_content_debug",
+                    "Content-Type does not indicate PDF, checking content...",
+                )
+                # Check first few bytes for PDF signature
+                first_chunk = next(response.iter_content(chunk_size=1024), b"")
+                self.app._add_log(
+                    "http_content_debug",
+                    f"First chunk size: {len(first_chunk)} bytes",
+                )
+
+                if not first_chunk.startswith(b"%PDF"):
+                    # Provide more detailed error information
+                    content_preview = first_chunk[:100].decode("utf-8", errors="ignore")
+                    error_msg = f"URL does not point to a valid PDF file.\nContent-Type: {content_type}\nContent preview: {content_preview}..."
+                    self.app._add_log("http_content_error", error_msg)
+                    return "", error_msg
+                else:
+                    self.app._add_log(
+                        "http_content_debug",
+                        "Content starts with PDF signature despite Content-Type",
+                    )
+
+            self.app._add_log(
+                "file_write_start", f"Starting file write to: {target_path}"
+            )
+
+            # Get content length for progress tracking
+            content_length = response.headers.get("content-length")
+            total_size = int(content_length) if content_length else None
+
+            if total_size:
+                self.app._add_log(
+                    "download_progress",
+                    f"PDF size: {total_size:,} bytes ({total_size/1024/1024:.1f} MB)",
+                )
+            else:
+                self.app._add_log(
+                    "download_progress",
+                    "PDF size: Unknown (no Content-Length header)",
+                )
+
+            # Download the file with progress tracking
+            total_bytes = 0
+            chunk_count = 0
+            start_time = time.time()
+            last_progress_log = 0
+
+            with open(target_path, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        total_bytes += len(chunk)
+                        chunk_count += 1
+
+                        # Log progress every 10% or every 50 chunks (whichever comes first)
+                        if total_size:
+                            progress_percent = (total_bytes / total_size) * 100
+                            if progress_percent - last_progress_log >= 10:  # Every 10%
+                                elapsed = time.time() - start_time
+                                speed = total_bytes / elapsed if elapsed > 0 else 0
+                                speed_mb = speed / 1024 / 1024
+
+                                self.app._add_log(
+                                    "download_progress",
+                                    f"Downloaded {progress_percent:.1f}% ({total_bytes:,}/{total_size:,} bytes) at {speed_mb:.1f} MB/s",
+                                )
+                                last_progress_log = progress_percent
+                        elif chunk_count % 50 == 0:  # Every 50 chunks when size unknown
+                            elapsed = time.time() - start_time
+                            speed = total_bytes / elapsed if elapsed > 0 else 0
+                            speed_mb = speed / 1024 / 1024
+
+                            self.app._add_log(
+                                "download_progress",
+                                f"Downloaded {total_bytes:,} bytes ({chunk_count} chunks) at {speed_mb:.1f} MB/s",
+                            )
+
+            elapsed = time.time() - start_time
+            avg_speed = total_bytes / elapsed if elapsed > 0 else 0
+            avg_speed_mb = avg_speed / 1024 / 1024
+
+            self.app._add_log(
+                "file_write_success",
+                f"Successfully downloaded {total_bytes:,} bytes to: {target_path}",
+            )
+            self.app._add_log(
+                "download_stats",
+                f"Total time: {elapsed:.1f}s, Average speed: {avg_speed_mb:.1f} MB/s",
+            )
+
+            # Verify file was created and has content
+            if os.path.exists(target_path):
+                file_size = os.path.getsize(target_path)
+                self.app._add_log(
+                    "file_verify_debug", f"Downloaded file size: {file_size} bytes"
+                )
+                if file_size == 0:
+                    self.app._add_log("file_verify_error", "Downloaded file is empty")
+                    return "", "Downloaded PDF file is empty"
+            else:
+                self.app._add_log(
+                    "file_verify_error",
+                    f"Downloaded file was not created at: {target_path}",
+                )
+                return "", "Downloaded file was not created"
+
+            return target_path, ""
+
+        except Exception as e:
+            error_msg = f"Failed to download PDF from URL: {str(e)}"
+            self.app._add_log(
+                "http_download_exception",
+                f"Exception in _download_pdf_from_url: {error_msg}",
+            )
+            self.app._add_log(
+                "http_download_traceback", f"Traceback: {traceback.format_exc()}"
+            )
+            return "", error_msg
+
+
+class PDFDownloadHandler:
+    """Handles PDF download completion callbacks."""
+
+    def __init__(self, app, pdf_service: Optional[PDFService] = None):
+        self.app = app
+        self.pdf_service = pdf_service or PDFService(app=app)
+
+    def create_download_completion_callback(
+        self, path_id: str, source: str
+    ) -> Callable:
+        """Create a standardized PDF download completion callback."""
+
+        def handle_download_completion(
+            download_result: Dict[str, Any], error: Optional[str]
+        ):
+            if error:
+                self.app.notify(
+                    f"PDF download failed for {path_id}: {error}",
+                    severity="error",
+                )
+                return
+
+            if not download_result or not download_result.get("success"):
+                error_msg = (
+                    download_result.get("error", "Unknown error")
+                    if download_result
+                    else "Unknown error"
+                )
+                self.app.notify(
+                    f"PDF download failed for {path_id}: {error_msg}",
+                    severity="warning",
+                )
+                return
+
+            self._handle_successful_download(download_result, path_id, source)
+
+        return handle_download_completion
+
+    def _handle_successful_download(
+        self, download_result: Dict[str, Any], path_id: str, source: str
+    ):
+        """Handle successful PDF download with detailed reporting."""
+        try:
+            pdf_path = download_result.get("pdf_path", "")
+            download_duration = download_result.get("download_duration", 0.0)
+
+            if pdf_path and download_duration > 0:
+                pdf_dir = get_pdf_directory()
+                abs_pdf_path = os.path.join(pdf_dir, pdf_path)
+                summary = self.pdf_service.create_download_summary(
+                    abs_pdf_path, download_duration
+                )
+                self.app.notify(
+                    f"{source.title()} PDF {path_id}: {summary}",
+                    severity="information",
+                )
+            else:
+                self.app.notify(
+                    f"PDF downloaded for {source}: {path_id}",
+                    severity="information",
+                )
+        except Exception:
+            self.app.notify(
+                f"PDF downloaded for {source}: {path_id}",
+                severity="information",
+            )
+
+        self.app.load_papers()  # Reload to show PDF indicator
+
+
+class PDFExtractionHandler:
+    """Handles PDF metadata extraction operations."""
+
+    def __init__(self, app, pdf_manager):
+        self.app = app
+        self.pdf_manager = pdf_manager
+
+    def create_extraction_task(self, pdf_path: str) -> Callable:
+        """Create a PDF metadata extraction task."""
+
+        def extract_metadata_operation():
+            extractor = MetadataExtractor(pdf_manager=self.pdf_manager, app=self.app)
+            extracted_data = extractor.extract_from_pdf(pdf_path)
+            if not extracted_data:
+                raise Exception("No metadata could be extracted from PDF")
+            return extracted_data
+
+        return extract_metadata_operation
+
+    def create_extraction_completion_callback(
+        self, on_success: Callable[[Dict[str, Any]], None]
+    ) -> Callable:
+        """Create a callback for handling extraction completion."""
+
+        def handle_extraction_completion(
+            extracted_data: Optional[Dict[str, Any]], error: Optional[str]
+        ):
+            if error:
+                self.app.notify(
+                    f"Failed to extract metadata: {error}", severity="error"
+                )
+                return
+
+            if not extracted_data:
+                self.app.notify(
+                    "Failed to extract metadata: No data extracted",
+                    severity="error",
+                )
+                return
+
+            on_success(extracted_data)
+
+        return handle_extraction_completion
+
+
+class PDFDownloadTaskFactory:
+    """Factory for creating PDF download tasks."""
+
+    @staticmethod
+    def create_download_task(
+        add_paper_service,
+        paper_id: int,
+        source: str,
+        path_id: str,
+        paper_data: Dict[str, Any],
+    ) -> Callable:
+        """Create a PDF download task function."""
+
+        def download_task():
+            return add_paper_service.download_and_update_pdf(
+                paper_id, source, path_id, paper_data
+            )
+
+        return download_task
+
+    @staticmethod
+    def create_metadata_extraction_task(
+        add_paper_service,
+        paper_id: int,
+        pdf_path: str,
+    ) -> Callable:
+        """Create a PDF metadata extraction task function."""
+
+        def extraction_task():
+            return add_paper_service.extract_and_update_pdf_metadata(paper_id, pdf_path)
+
+        return extraction_task

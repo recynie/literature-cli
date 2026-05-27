@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "literature-cli"
+version = "0.1.0"
+description = "Agent-oriented research paper management CLI"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "SQLAlchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "PyPDF2>=3.0.0",
+    "openai>=1.0.0",
+    "fuzzywuzzy>=0.18.0",
+    "python-Levenshtein>=0.21.0",
+    "titlecase>=2.4.0",
+    "python-dotenv>=1.0.0",
+    "bibtexparser",
+    "rispy",
+    "pyperclip>=1.8.0",
+    "pluralizer>=2.0.0",
+    "typer>=0.12.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+lit = "lit.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ng*", "lit*"]
+
+[tool.setuptools.package-data]
+ng = ["alembic/*.py", "alembic/*.mako", "alembic/*.ini", "alembic/versions/*.py"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"

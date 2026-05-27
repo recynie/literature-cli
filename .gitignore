@@ -1,0 +1,45 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.coverage
+htmlcov/
+
+# Virtual environments and local installs
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Build artifacts
+build/
+dist/
+*.egg
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and runtime data
+*.db
+*.sqlite
+*.sqlite3
+papers.db
+pdfs/
+html_snapshots/
+
+# Local reference checkout
+references/papercli/
+
+# Tooling indexes and editor files
+.codegraph/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

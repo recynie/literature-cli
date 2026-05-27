@@ -1,0 +1,2 @@
+"""LiteratureCLI command-line package."""
+
