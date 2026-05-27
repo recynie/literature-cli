@@ -1,15 +1,27 @@
-# CLI 接口设计
+# CLI 接口
 
 ## 概览
 
-`lit` 是 LiteratureCLI 的命令行入口，基于 `typer` 构建。所有命令默认输出 human-readable 文本，加 `--json` 输出结构化 JSON，供 agent 解析。
+`lit` 是 LiteratureCLI 的命令行入口，基于 `typer` 构建。所有命令默认输出 human-readable 文本（基于 `rich`），加 `--json` 输出结构化 JSON，供 agent 解析。
+
+全局 `--json` 可在顶层设置，对所有子命令生效：
+
+```bash
+lit --json list
+lit --json search "transformer"
+```
 
 ---
 
 ## 安装与入口
 
 ```bash
-pip install -e .
+# 开发模式
+uv pip install -e ".[dev]"
+
+# 全局安装
+uv tool install .
+
 lit --help
 ```
 
@@ -33,12 +45,14 @@ lit --help
     "paper_type": "conference",
     "abstract": "...",
     "notes": "...",
-    "doi": "...",
+    "doi": null,
     "preprint_id": "arXiv 1706.03762",
+    "category": "cs.CL",
     "url": "https://arxiv.org/abs/1706.03762",
     "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
     "collections": ["transformers", "to-read"],
-    "added_date": "2024-01-01T00:00:00"
+    "added_date": "2024-01-01T00:00:00",
+    "modified_date": "2024-01-01T00:00:00"
   }
 }
 ```
@@ -70,21 +84,21 @@ lit --help
 ### `lit add` — 导入论文
 
 ```bash
-# arXiv
+# arXiv（ID 或完整 URL）
 lit add arxiv 1706.03762 [--json]
 lit add arxiv https://arxiv.org/abs/1706.03762 [--json]
 
 # DBLP
 lit add dblp https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17 [--json]
 
-# OpenReview
+# OpenReview（ID 或完整 URL）
 lit add openreview abc123XYZ [--json]
 lit add openreview https://openreview.net/forum?id=abc123XYZ [--json]
 
 # DOI
 lit add doi 10.5555/3295222.3295349 [--json]
 
-# 本地 PDF（LLM 提取元数据）
+# 本地 PDF（LLM 提取元数据，需要 OPENAI_API_KEY）
 lit add pdf ./paper.pdf [--json]
 
 # BibTeX 文件（批量）
@@ -99,6 +113,8 @@ lit add manual --title "Paper Title" [--json]
 
 **返回**：单篇返回 paper 对象；批量（bib/ris）返回 `{ "ok": true, "papers": [...], "errors": [...], "count": N }`
 
+`lit add arxiv` 和 `lit add openreview` 会自动下载 PDF，返回结果中含 `pdf_path` 和 `pdf_error` 字段。
+
 ---
 
 ### `lit search` — 搜索
@@ -107,7 +123,7 @@ lit add manual --title "Paper Title" [--json]
 # 全字段搜索
 lit search "attention mechanism" [--json]
 
-# 指定字段
+# 指定字段（title、abstract、venue、authors、notes）
 lit search "transformer" --fields title,abstract [--json]
 
 # 模糊搜索
@@ -125,6 +141,7 @@ lit filter --year-range 2020-2023 [--json]
 lit filter --venue "NeurIPS" [--json]
 lit filter --type conference [--json]   # conference|journal|preprint|workshop
 lit filter --collection "to-read" [--json]
+lit filter --query "diffusion" [--json]  # 全字段关键词过滤
 
 # 组合过滤
 lit filter --author "LeCun" --year 2020 --type journal [--json]
@@ -139,6 +156,8 @@ lit list [--json]
 lit list --limit 20 [--json]
 lit list --sort year|title|added_date [--json]
 ```
+
+默认按 `added_date` 降序排列。
 
 ---
 
@@ -164,11 +183,12 @@ lit edit 42 --venue-acronym "ICML"
 lit edit 42 --paper-type conference
 lit edit 42 --doi "10.1145/..."
 lit edit 42 --url "https://..."
+lit edit 42 --pdf-path "/path/to/paper.pdf"
 
-# LLM 重新提取 PDF 元数据
+# LLM 重新提取 PDF 元数据（需要 OPENAI_API_KEY，论文须有关联 PDF）
 lit edit 42 --extract-pdf [--json]
 
-# LLM 生成摘要写入 notes
+# LLM 生成摘要写入 notes（需要 OPENAI_API_KEY，论文须有关联 PDF）
 lit edit 42 --summarize [--json]
 ```
 
@@ -177,11 +197,18 @@ lit edit 42 --summarize [--json]
 ### `lit delete` — 删除
 
 ```bash
+# 删除单篇（交互确认）
 lit delete 42
+
+# 批量删除
 lit delete --ids 1,2,3
+
+# 跳过确认（自动化场景）
+lit delete 42 --force
+lit delete --ids 1,2,3 --force [--json]
 ```
 
-同时删除关联的本地 PDF 文件。
+同时删除关联的本地 PDF 文件，不可恢复。
 
 ---
 
@@ -192,10 +219,12 @@ lit delete --ids 1,2,3
 lit export --format bibtex                        # 全库
 lit export --format bibtex --ids 1,3,7            # 指定 ID
 lit export --format bibtex --collection "to-read" # 指定 collection
-lit export --format json --json                   # JSON 格式 + JSON 输出
 
 # 输出到文件
 lit export --format bibtex --output refs.bib
+
+# JSON 输出（--json 时 content 字段为解析后的对象）
+lit export --format json --json
 ```
 
 ---
@@ -205,17 +234,19 @@ lit export --format bibtex --output refs.bib
 ```bash
 lit collect list [--json]
 lit collect show "deep-learning" [--json]
-lit collect create "deep-learning"
-lit collect rename "deep-learning" "dl-papers"
-lit collect delete "deep-learning"
+lit collect create "deep-learning" [--json]
+lit collect rename "deep-learning" "dl-papers" [--json]
+lit collect delete "deep-learning" [--force] [--json]
 
 # 添加/移除论文
-lit collect add "deep-learning" --ids 1,2,3
-lit collect remove "deep-learning" --ids 1,2,3
+lit collect add "deep-learning" --ids 1,2,3 [--json]
+lit collect remove "deep-learning" --ids 1,2,3 [--json]
 
 # 清理空 collection
-lit collect purge
+lit collect purge [--json]
 ```
+
+`lit collect show` 返回 collection 元数据 + 该 collection 下所有论文列表。
 
 ---
 
@@ -228,7 +259,7 @@ lit pdf path 42 [--json]
 # 用系统默认程序打开
 lit pdf open 42
 
-# 重新下载
+# 重新下载（支持 arXiv、OpenReview、直接 PDF URL）
 lit pdf download 42 [--json]
 ```
 
@@ -240,9 +271,11 @@ lit pdf download 42 [--json]
 # 检查孤立记录和文件
 lit db check [--json]
 
-# 清理孤立 PDF 文件和数据库记录
-lit db clean
+# 清理孤立 PDF 文件、数据库记录、修复绝对路径等
+lit db clean [--json]
 ```
+
+`lit db clean` 执行：清理孤立数据库记录、孤立 PDF 文件、孤立 HTML 文件、修复绝对 PDF 路径、规范化 PDF 文件名。
 
 ---
 
@@ -253,11 +286,14 @@ lit db clean
 ```
 lit/
 ├── main.py              # typer app，注册所有子命令
-├── output.py            # JSON / human-readable 统一输出
+├── config.py            # JSON 配置加载（用户级 + 项目级）
+├── output.py            # JSON / human-readable 统一输出（rich）
 ├── logger.py            # CliLogger，实现 _add_log / notify 接口
 └── commands/
+    ├── __init__.py      # 共享 helper：service 初始化、ID 解析、错误处理
     ├── add.py
     ├── search.py
+    ├── list.py
     ├── show.py
     ├── edit.py
     ├── delete.py
@@ -273,34 +309,27 @@ lit/
 
 ```python
 # lit/logger.py
-import logging
-
 class CliLogger:
+    def __init__(self, db_path: str | None = None):
+        self.db_path = db_path
+
     def _add_log(self, key: str, message: str):
         logging.debug("[%s] %s", key, message)
 
     def notify(self, message: str, severity: str = "information"):
         if severity == "error":
             logging.error(message)
+        elif severity == "warning":
+            logging.warning(message)
         else:
             logging.info(message)
 ```
 
 ### 输出格式化
 
-```python
-# lit/output.py
-import json, sys
+`lit/output.py` 提供两条路径：
 
-def print_result(data: dict, as_json: bool):
-    if as_json:
-        print(json.dumps(data, ensure_ascii=False, indent=2))
-    else:
-        # human-readable 格式化
-        ...
+- `--json`：`json.dumps` 输出，`default=str` 处理日期等非标准类型
+- human-readable：`rich` 表格（列表）或 `Panel`（详情）
 
-def error(message: str, code: str, as_json: bool):
-    data = {"ok": False, "error": message, "code": code}
-    print_result(data, as_json)
-    sys.exit(1)
-```
+`paper_to_dict()` 将 ORM 对象转为公开 JSON schema，`pdf_path` 自动解析为绝对路径。

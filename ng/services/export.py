@@ -213,7 +213,7 @@ def export_to_html(papers: List[Paper]) -> str:
     html = """<!DOCTYPE html>\n<html>\n<head>\n    <title>Paper List</title>\n    <style>\n        body { font-family: Arial, sans-serif; margin: 20px; }\n        .paper { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; }\n        .title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }\n        .authors { font-style: italic; margin-bottom: 5px; }\n        .venue { color: #666; margin-bottom: 5px; }\n        .abstract { margin-top: 10px; }\n        .notes { margin-top: 10px; font-style: italic; }\n    </style>\n</head>\n<body>\n    <h1>Paper List</h1>\n"""
 
     for paper in papers:
-        html += f'    <div class="paper">\n'
+        html += '    <div class="paper">\n'
         html += f'        <div class="title">{paper.title}</div>\n'
 
         ordered_authors = paper.get_ordered_authors()

@@ -367,7 +367,6 @@ class AddPaperService:
         relative_pdf_path, pdf_error = pdf_manager.process_pdf_path(
             pdf_path, temp_paper_data
         )
-        copy_duration = 0.0  # process_pdf_path doesn't return duration
 
         if pdf_error:
             raise Exception(f"Failed to copy PDF: {pdf_error}")

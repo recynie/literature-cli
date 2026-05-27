@@ -229,11 +229,6 @@ class PaperService:
         with get_db_session() as session:
             paper = session.query(Paper).filter(Paper.id == paper_id).first()
             if paper:
-                # Capture info before deletion for auto-sync intents
-                deleted_title = paper.title
-                deleted_pdf_filename = (
-                    os.path.basename(paper.pdf_path) if paper.pdf_path else None
-                )
                 if self.app:
                     self.app._add_log(
                         "paper_delete_start",

@@ -6,7 +6,6 @@ Create Date: 2025-10-08 00:50:44.338536
 
 """
 
-import uuid
 from typing import Sequence, Union
 
 from alembic import op

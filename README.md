@@ -14,8 +14,14 @@
 ## 快速开始
 
 ```bash
-# 安装
+# 开发模式安装
 pip install -e .
+
+# 或用 uv（推荐）
+uv pip install -e ".[dev]"
+
+# 全局安装，任意目录可用 lit 命令
+uv tool install .
 
 # 配置 OpenAI API key（PDF 元数据提取需要）
 mkdir -p ~/.config/litcli
@@ -43,8 +49,8 @@ lit export --format bibtex --collection "my-papers"
 |------|------|
 | `ng/db/` | ✅ 完成（移植自 papercli）|
 | `ng/services/` | ✅ 完成（移植并精简）|
-| `lit/` CLI 层 | 🔲 待实现 |
-| `skills/literature-cli/` | 🔲 待实现 |
+| `lit/` CLI 层 | ✅ 完成 |
+| `skills/literature-cli/` | ✅ 完成 |
 
 ## 配置
 

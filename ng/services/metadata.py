@@ -259,7 +259,7 @@ class MetadataExtractor:
                     "venue_acronym": self._extract_acronym_fallback(venue_field),
                 }
 
-        except Exception as e:
+        except Exception:
             # Fallback on any error
             return {
                 "venue_full": venue_field,

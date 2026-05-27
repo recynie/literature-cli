@@ -191,7 +191,7 @@ class DatabaseHealthService:
             "table_counts": table_counts,
         }
 
-        self._add_log("db_integrity_complete", f"Database integrity check complete")
+        self._add_log("db_integrity_complete", "Database integrity check complete")
         return result
 
     def _find_orphaned_records(self) -> Dict[str, Any]:
@@ -248,7 +248,7 @@ class DatabaseHealthService:
             }
         }
 
-        self._add_log("orphaned_records_complete", f"Orphaned records check complete")
+        self._add_log("orphaned_records_complete", "Orphaned records check complete")
         return result
 
     def _find_orphaned_pdfs(self) -> Dict[str, Any]:
@@ -680,7 +680,7 @@ class DatabaseHealthService:
                                 version = module.__version__
                             elif hasattr(module, "VERSION"):
                                 version = module.VERSION
-                        except:
+                        except Exception:
                             pass
 
                         # If that didn't work, try pkg_resources or importlib.metadata
@@ -689,14 +689,14 @@ class DatabaseHealthService:
                                 from importlib.metadata import version as get_version
 
                                 version = get_version(package_name)
-                            except:
+                            except Exception:
                                 try:
                                     import pkg_resources
 
                                     version = pkg_resources.get_distribution(
                                         package_name
                                     ).version
-                                except:
+                                except Exception:
                                     version = "installed"
 
                         dependencies[module_name] = {
