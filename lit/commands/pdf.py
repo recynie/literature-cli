@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 
 import typer
 
@@ -76,15 +75,12 @@ def download(ctx: typer.Context, paper_id: int, json: bool = JSON_OPTION):
 
         source = None
         identifier = None
-        if paper.preprint_id and "arxiv" in paper.preprint_id.lower():
+        from ng.services.arxiv_utils import parse_arxiv_id
+
+        arxiv_id = parse_arxiv_id(paper)
+        if arxiv_id:
             source = "arxiv"
-            identifier = paper.preprint_id.lower().replace("arxiv", "").strip()
-        elif paper.url and "arxiv.org" in paper.url.lower():
-            source = "arxiv"
-            # Extract arXiv ID from URL like https://arxiv.org/abs/2505.15134
-            match = re.search(r"arxiv\.org/(?:abs|pdf)/([\d.]+(?:v\d+)?)", paper.url)
-            if match:
-                identifier = match.group(1)
+            identifier = arxiv_id
         elif paper.url and "openreview.net" in paper.url:
             source = "openreview"
             identifier = paper.url.rsplit("id=", 1)[-1]

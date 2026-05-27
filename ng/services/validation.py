@@ -4,6 +4,8 @@ import os
 import re
 from typing import Iterable, Tuple
 
+from ng.services.arxiv_utils import clean_arxiv_id
+
 
 def validate_arxiv_id(arxiv_id: str) -> Tuple[bool, str]:
     """
@@ -18,9 +20,7 @@ def validate_arxiv_id(arxiv_id: str) -> Tuple[bool, str]:
     if not arxiv_id or not arxiv_id.strip():
         return False, "arXiv ID cannot be empty"
 
-    # Clean the ID first using existing logic from MetadataExtractor
-    clean_id = re.sub(r"arxiv[:\s]*", "", arxiv_id.strip(), flags=re.IGNORECASE)
-    clean_id = re.sub(r"[^\d\.v]", "", clean_id)
+    clean_id = clean_arxiv_id(arxiv_id)
 
     if not clean_id:
         return (

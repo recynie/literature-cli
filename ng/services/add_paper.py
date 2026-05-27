@@ -17,6 +17,7 @@ from ng.services import (
     format_title_by_words,
     normalize_paper_data,
 )
+from ng.services.arxiv_utils import arxiv_pdf_url
 
 if TYPE_CHECKING:
     from ng.db.models import Paper
@@ -74,7 +75,7 @@ class AddPaperService:
             metadata,
             overrides={
                 "paper_type": "preprint",
-                "url": f"https://arxiv.org/pdf/{arxiv_id}.pdf",
+                "url": arxiv_pdf_url(arxiv_id),
             },
         )
 
@@ -116,7 +117,7 @@ class AddPaperService:
             "preprint_id": metadata.get("preprint_id"),
             "category": metadata.get("category"),
             "doi": metadata.get("doi"),
-            "url": f"https://arxiv.org/pdf/{arxiv_id}.pdf",
+            "url": arxiv_pdf_url(arxiv_id),
         }
 
         paper_data = normalize_paper_data(paper_data)
@@ -683,22 +684,20 @@ class AddPaperService:
     def add_manual_paper(self, title: str = "") -> Dict[str, Any]:
         """Add a paper manually with basic defaults."""
         try:
-            # Create basic manual paper based on original implementation
             current_year = datetime.now().year
             paper_data = {
-                "title": title if title.strip() else "Manually Added Paper",
-                "abstract": "This paper was added manually via PaperCLI.",
+                "title": title if title.strip() else "Untitled",
+                "abstract": "",
                 "year": current_year,
-                "venue_full": "User Input",
-                "venue_acronym": "UI",
-                "paper_type": "journal",
-                "notes": "Added manually - please update metadata using /edit",
+                "venue_full": "",
+                "venue_acronym": "",
+                "paper_type": "unknown",
             }
 
             # Normalize paper data for database storage
             paper_data = normalize_paper_data(paper_data)
 
-            authors = ["Manual User"]
+            authors = []
             collections = []
 
             paper = self.paper_service.add_paper_from_metadata(

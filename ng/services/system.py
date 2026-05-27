@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import os
 import platform
-import re
 import subprocess
 import traceback
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import pyperclip
+
+from ng.services.arxiv_utils import arxiv_pdf_url
 
 if TYPE_CHECKING:
     from ng.services import PDFManager
@@ -141,15 +142,10 @@ class SystemService:
 
             # Generate URL based on source
             if source == "arxiv":
-                # Clean arXiv ID while preserving version numbers
-                clean_id = re.sub(r"arxiv[:\s]*", "", identifier, flags=re.IGNORECASE)
-                clean_id = re.sub(
-                    r"[^\d\.v]", "", clean_id
-                )  # Allow digits, dots, and 'v' for versions
-                pdf_url = f"https://arxiv.org/pdf/{clean_id}.pdf"
+                pdf_url = arxiv_pdf_url(identifier)
                 self.app._add_log(
                     "system_download_debug",
-                    f"arXiv: original_id='{identifier}' -> clean_id='{clean_id}' -> url='{pdf_url}'",
+                    f"arXiv: original_id='{identifier}' -> url='{pdf_url}'",
                 )
             elif source == "openreview":
                 pdf_url = f"https://openreview.net/pdf?id={identifier}"

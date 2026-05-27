@@ -49,10 +49,9 @@ class MetadataExtractor:
 
     def extract_from_arxiv(self, arxiv_id: str) -> Dict[str, Any]:
         """Extract metadata from arXiv."""
-        arxiv_id = re.sub(r"arxiv[:\s]*", "", arxiv_id, flags=re.IGNORECASE)
-        arxiv_id = re.sub(
-            r"[^\d\.v]", "", arxiv_id
-        )  # Allow digits, dots, and 'v' for versions
+        from ng.services.arxiv_utils import clean_arxiv_id
+
+        arxiv_id = clean_arxiv_id(arxiv_id)
 
         try:
             url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"

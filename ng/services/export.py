@@ -9,6 +9,7 @@ import bibtexparser
 from bibtexparser.customization import string_to_latex
 
 from ..db.models import Paper
+from .arxiv_utils import is_arxiv_paper, parse_arxiv_id
 
 
 def export_to_bibtex(papers: List[Paper]) -> str:
@@ -20,7 +21,7 @@ def export_to_bibtex(papers: List[Paper]) -> str:
 
         entry["ID"] = _generate_bibtex_key(paper)
 
-        is_preprint = _is_preprint(paper)
+        is_preprint = is_arxiv_paper(paper)
 
         entry["ENTRYTYPE"] = (
             "article"
@@ -57,15 +58,8 @@ def export_to_bibtex(papers: List[Paper]) -> str:
         if paper.year:
             entry["year"] = str(paper.year)
 
-        if is_preprint and paper.preprint_id:
-            arxiv_id = paper.preprint_id.replace("arXiv ", "").strip()
-            entry["eprint"] = arxiv_id
-            entry["eprinttype"] = "arxiv"
-
-            if paper.category:
-                entry["eprintclass"] = paper.category
-        elif is_preprint and paper.url:
-            arxiv_id = _extract_arxiv_id_from_url(paper.url)
+        if is_preprint:
+            arxiv_id = parse_arxiv_id(paper)
             if arxiv_id:
                 entry["eprint"] = arxiv_id
                 entry["eprinttype"] = "arxiv"
@@ -135,7 +129,7 @@ def export_to_ieee(papers: List[Paper]) -> str:
 
         ref += f'"{paper.title}," '
 
-        is_preprint = _is_preprint(paper)
+        is_preprint = is_arxiv_paper(paper)
 
         if is_preprint:
             # For preprints: "arXiv.org, vol. category. date."
@@ -345,29 +339,3 @@ def _extract_first_significant_word(title: str) -> str:
     return "untitled"
 
 
-def _extract_arxiv_id_from_url(url: str) -> str:
-    """Extract arXiv ID from a URL like https://arxiv.org/abs/2505.15134."""
-    if not url:
-        return ""
-    match = re.search(r"arxiv\.org/(?:abs|pdf)/([\d.]+(?:v\d+)?)", url)
-    return match.group(1) if match else ""
-
-
-def _is_preprint(paper) -> bool:
-    """Determine if paper is a preprint."""
-    if paper.paper_type and paper.paper_type.lower() in ["preprint", "arxiv"]:
-        return True
-
-    if paper.preprint_id and (
-        "arxiv" in paper.preprint_id.lower()
-        or re.match(r"^\d{4}\.\d{4,5}", paper.preprint_id)
-    ):
-        return True
-
-    if paper.venue_full and "arxiv" in paper.venue_full.lower():
-        return True
-
-    if paper.url and "arxiv.org" in paper.url.lower():
-        return True
-
-    return False
