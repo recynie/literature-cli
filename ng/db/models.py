@@ -73,6 +73,7 @@ class Author(Base):
     email: Mapped[Optional[str]] = mapped_column(String(255))
     affiliation_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("affiliations.id"))
     personal_url: Mapped[Optional[str]] = mapped_column(String(500))
+    faculty_url: Mapped[Optional[str]] = mapped_column(String(500))
     scholar_url: Mapped[Optional[str]] = mapped_column(String(500))
     orcid: Mapped[Optional[str]] = mapped_column(String(50))
 

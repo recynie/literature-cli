@@ -80,6 +80,9 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
         if "orcid" not in author_columns:
             cursor.execute("ALTER TABLE authors ADD COLUMN orcid VARCHAR(50)")
             columns_added.append("authors.orcid")
+        if "faculty_url" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN faculty_url VARCHAR(500)")
+            columns_added.append("authors.faculty_url")
         if "affiliation" in author_columns:
             cursor.execute(
                 "SELECT DISTINCT affiliation FROM authors WHERE affiliation IS NOT NULL AND TRIM(affiliation) != ''"
@@ -123,7 +126,7 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
             )
             if cursor.fetchone():
                 cursor.execute(
-                    "UPDATE alembic_version SET version_num = '6c2b9a7f1d10'"
+                    "UPDATE alembic_version SET version_num = '3e1f8a2c9b05'"
                 )
 
             conn.commit()

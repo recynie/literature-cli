@@ -86,6 +86,7 @@ def add(
     last_name: str | None = typer.Option(None, "--last-name"),
     email: str | None = typer.Option(None, "--email"),
     personal_url: str | None = typer.Option(None, "--personal-url"),
+    faculty_url: str | None = typer.Option(None, "--faculty-url"),
     scholar_url: str | None = typer.Option(None, "--scholar-url"),
     orcid: str | None = typer.Option(None, "--orcid"),
     institution: str | None = typer.Option(None, "--institution"),
@@ -94,7 +95,7 @@ def add(
 ):
     flag = as_json(ctx, json)
     try:
-        data = _author_data(full_name, first_name, last_name, email, personal_url, scholar_url, orcid, institution, department)
+        data = _author_data(full_name, first_name, last_name, email, personal_url, faculty_url, scholar_url, orcid, institution, department)
         author = services(ctx)["author"].add_author(data)
         output.print_result({"ok": True, "author": output.author_to_dict(author)}, flag)
     except Exception as exc:
@@ -110,6 +111,7 @@ def edit(
     last_name: str | None = typer.Option(None, "--last-name"),
     email: str | None = typer.Option(None, "--email"),
     personal_url: str | None = typer.Option(None, "--personal-url"),
+    faculty_url: str | None = typer.Option(None, "--faculty-url"),
     scholar_url: str | None = typer.Option(None, "--scholar-url"),
     orcid: str | None = typer.Option(None, "--orcid"),
     institution: str | None = typer.Option(None, "--institution"),
@@ -124,6 +126,7 @@ def edit(
             "last_name": last_name,
             "email": email,
             "personal_url": personal_url,
+            "faculty_url": faculty_url,
             "scholar_url": scholar_url,
             "orcid": orcid,
             "institution": institution,
@@ -169,13 +172,14 @@ def merge(
         handle_exception(exc, flag)
 
 
-def _author_data(full_name, first_name, last_name, email, personal_url, scholar_url, orcid, institution, department):
+def _author_data(full_name, first_name, last_name, email, personal_url, faculty_url, scholar_url, orcid, institution, department):
     return {
         "full_name": full_name,
         "first_name": first_name,
         "last_name": last_name,
         "email": email,
         "personal_url": personal_url,
+        "faculty_url": faculty_url,
         "scholar_url": scholar_url,
         "orcid": orcid,
         "institution": institution,

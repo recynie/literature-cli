@@ -34,8 +34,8 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | List authors | `lit author list --json` |
 | Search authors | `lit author search "<name>" --json` |
 | Show author | `lit author show <id> --json` |
-| Add author | `lit author add "<full-name>" --email/--personal-url/--scholar-url/--orcid/--institution/--department --json` |
-| Edit author | `lit author edit <id> --email/--personal-url/--scholar-url/--orcid/--institution/--department <value> --json` |
+| Add author | `lit author add "<full-name>" --email/--personal-url/--faculty-url/--scholar-url/--orcid/--institution/--department --json` |
+| Edit author | `lit author edit <id> --email/--personal-url/--faculty-url/--scholar-url/--orcid/--institution/--department <value> --json` |
 | Delete author | `lit author delete <id> --force --json` |
 | Merge duplicate authors | `lit author merge --target <id> --sources 2,3 --json` |
 | List affiliations | `lit affiliation list --json` |
@@ -136,6 +136,11 @@ lit add ris ./exported_refs.ris --json
 
 ### Manage Authors And Affiliations
 
+Author URL fields:
+- `--personal-url`: 作者的个人主页，如 GitHub Pages、个人博客等（`https://yann.lecun.com`）
+- `--faculty-url`: 机构为作者建立的教职主页，如大学院系页面（`https://cs.nyu.edu/~yann`）
+- `--scholar-url`: 学术档案页，如 Google Scholar、Semantic Scholar
+
 ```bash
 # Create a standalone author and affiliation
 lit author add "Yann LeCun" --institution "New York University" --department "CILVR Lab" --json
@@ -143,7 +148,11 @@ lit author add "Yann LeCun" --institution "New York University" --department "CI
 
 # Find an imported author and enrich metadata
 lit author search "Vaswani" --json
-lit author edit 7 --email "..." --personal-url "..." --institution "Google" --json
+lit author edit 7 \
+  --email "..." \
+  --personal-url "https://example.com" \
+  --faculty-url "https://cs.university.edu/~vaswani" \
+  --institution "Google" --json
 
 # Explore institution-linked papers
 lit author list --institution "Google" --json

@@ -208,7 +208,7 @@ class AuthorService:
         return affiliation
 
     def _assign_simple_fields(self, author: Author, data: dict[str, Any], partial: bool = False) -> None:
-        fields = ("full_name", "first_name", "last_name", "email", "personal_url", "scholar_url", "orcid")
+        fields = ("full_name", "first_name", "last_name", "email", "personal_url", "faculty_url", "scholar_url", "orcid")
         for field in fields:
             if field in data:
                 value = self._clean_optional(data[field])
@@ -219,7 +219,7 @@ class AuthorService:
                 setattr(author, field, self._clean_optional(data.get(field)))
 
     def _fill_missing_fields(self, target: Author, source: Author) -> None:
-        for field in ("first_name", "last_name", "email", "personal_url", "scholar_url", "orcid", "affiliation_id"):
+        for field in ("first_name", "last_name", "email", "personal_url", "faculty_url", "scholar_url", "orcid", "affiliation_id"):
             if getattr(target, field) in (None, "") and getattr(source, field) not in (None, ""):
                 setattr(target, field, getattr(source, field))
 
