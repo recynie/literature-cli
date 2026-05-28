@@ -16,7 +16,7 @@ from lit.commands import add, affiliation, author, collect, db, delete, edit, ex
 from ng.db.database import init_database
 
 
-app = typer.Typer(help="Agent-oriented research paper management CLI.")
+app = typer.Typer(help="Agent-oriented research paper management CLI.", rich_markup_mode=None)
 
 
 def _default_db_path() -> str:

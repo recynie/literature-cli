@@ -8,7 +8,7 @@ from lit import output
 from lit.commands import JSON_OPTION, as_json, handle_exception, parse_ids, services
 
 
-app = typer.Typer(help="Manage paper collections.")
+app = typer.Typer(help="Manage paper collections.", rich_markup_mode=None)
 
 
 def _collection_by_name(collections, name: str):

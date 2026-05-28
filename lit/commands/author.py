@@ -8,7 +8,7 @@ from lit import output
 from lit.commands import JSON_OPTION, as_json, handle_exception, parse_ids, services
 
 
-app = typer.Typer(help="Manage authors.")
+app = typer.Typer(help="Manage authors.", rich_markup_mode=None)
 
 
 @app.command("list")

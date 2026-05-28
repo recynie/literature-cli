@@ -9,7 +9,7 @@ from lit.commands import JSON_OPTION, as_json, handle_exception, logger
 from ng.services import DatabaseHealthService
 
 
-app = typer.Typer(help="Database maintenance.")
+app = typer.Typer(help="Database maintenance.", rich_markup_mode=None)
 
 
 def _service(ctx: typer.Context) -> DatabaseHealthService:

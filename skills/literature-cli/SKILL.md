@@ -1,6 +1,6 @@
 ---
 name: literature-cli
-description: "Manage research papers from the command line: import (arXiv/DOI/BibTeX/RIS/manual/PDF), search, filter, edit, export (BibTeX/Markdown/IEEE/HTML/JSON), collections, and database maintenance. Use when the user mentions papers, citations, arXiv IDs, DOIs, BibTeX, RIS, literature search, create a literature base, paper organization, reference management, or bibliography export."
+description: "Manage research papers from the command line: import (arXiv/DOI/BibTeX/RIS/manual/PDF), search, filter, edit, export (BibTeX/Markdown/IEEE/HTML/JSON), collections, and database maintenance. Use when the user wants to create a literature base, conduct an academic research, or mentions papers (arXiv IDs, DOIs, BibTeX, RIS), citations, lit cli, literature CLI, literature search, paper organization, reference management, or bibliography export."
 ---
 
 # LiteratureCLI

@@ -8,7 +8,7 @@ from lit import output
 from lit.commands import JSON_OPTION, as_json, handle_exception, services
 
 
-app = typer.Typer(help="Manage affiliations.")
+app = typer.Typer(help="Manage affiliations.", rich_markup_mode=None)
 
 
 @app.command("list")

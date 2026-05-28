@@ -10,7 +10,7 @@ from lit import output
 from lit.commands import JSON_OPTION, as_json, handle_exception, services
 
 
-app = typer.Typer(help="Import papers.")
+app = typer.Typer(help="Import papers.", rich_markup_mode=None)
 
 
 def _single_response(result: dict, svc: dict) -> dict:

@@ -11,7 +11,7 @@ from lit.commands import JSON_OPTION, as_json, handle_exception, services
 from ng.db.database import get_pdf_directory
 
 
-app = typer.Typer(help="Manage paper PDFs.")
+app = typer.Typer(help="Manage paper PDFs.", rich_markup_mode=None)
 
 
 def _paper_or_error(ctx: typer.Context, paper_id: int, flag: bool):
