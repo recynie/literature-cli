@@ -8,6 +8,7 @@
 - **智能元数据提取**：结构化 API 直接解析；PDF 和非标准来源通过 LLM 提取
 - **检索与过滤**：全文搜索、模糊搜索、多字段组合过滤
 - **Collection 管理**：自定义分组，批量操作
+- **作者与机构管理**：独立 Author/Affiliation CRUD，支持个人主页、ORCID、学校/院系两层机构
 - **多格式导出**：BibTeX、IEEE、Markdown、HTML、JSON
 - **PDF 管理**：自动下载、本地存储
 
@@ -33,6 +34,10 @@ lit add arxiv 1706.03762
 # 搜索
 lit search "attention mechanism" --json
 
+# 补充作者机构信息
+lit author add "Geoffrey Hinton" --institution "University of Toronto" --json
+lit affiliation list --json
+
 # 导出 BibTeX
 lit export --format bibtex --collection "my-papers"
 ```
@@ -51,6 +56,10 @@ lit export --format bibtex --collection "my-papers"
 | `ng/services/` | ✅ 完成（移植并精简）|
 | `lit/` CLI 层 | ✅ 完成 |
 | `skills/literature-cli/` | ✅ 完成 |
+
+## Roadmap
+
+- **只读 SQL 查询**：`lit db query "SELECT ..." --json`，对所有表执行任意只读 SQL，输出 JSON 行，供 agent 在结构化命令不够用时灵活查询
 
 ## 配置
 

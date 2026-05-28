@@ -21,7 +21,7 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Bulk import RIS | `lit add ris <path> --json` |
 | Search papers | `lit search "<query>" --json` |
 | Fuzzy search | `lit search "<query>" --fuzzy --threshold 60 --json` |
-| Filter papers | `lit filter --author/--year/--year-range/--venue/--type/--collection/--query --json` |
+| Filter papers | `lit filter --author/--year/--year-range/--venue/--type/--collection/--affiliation/--query --json` |
 | List papers | `lit list --json` |
 | Show details | `lit show <id> --json` |
 | Edit metadata | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--url/--notes/--year <value> --json` |
@@ -31,6 +31,18 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Export citations | `lit export --format bibtex/ieee/markdown/html/json --ids 1,2 --json` |
 | Export by collection | `lit export --format bibtex --collection "name" --json` |
 | Export to file | `lit export --format bibtex --output /path/to/file --ids 1,2 --json` |
+| List authors | `lit author list --json` |
+| Search authors | `lit author search "<name>" --json` |
+| Show author | `lit author show <id> --json` |
+| Add author | `lit author add "<full-name>" --email/--personal-url/--scholar-url/--orcid/--institution/--department --json` |
+| Edit author | `lit author edit <id> --email/--personal-url/--scholar-url/--orcid/--institution/--department <value> --json` |
+| Delete author | `lit author delete <id> --force --json` |
+| Merge duplicate authors | `lit author merge --target <id> --sources 2,3 --json` |
+| List affiliations | `lit affiliation list --json` |
+| Show affiliation | `lit affiliation show <id> --json` |
+| Add affiliation | `lit affiliation add "<institution>" --department "<department>" --url "<url>" --json` |
+| Edit affiliation | `lit affiliation edit <id> --institution/--department/--url <value> --json` |
+| Delete affiliation | `lit affiliation delete <id> --force --json` |
 | List collections | `lit collect list --json` |
 | Show collection | `lit collect show "name" --json` |
 | Create collection | `lit collect create "name" --json` |
@@ -121,6 +133,27 @@ lit add bib ./exported_refs.bib --json
 # Import RIS
 lit add ris ./exported_refs.ris --json
 ```
+
+### Manage Authors And Affiliations
+
+```bash
+# Create a standalone author and affiliation
+lit author add "Yann LeCun" --institution "New York University" --department "CILVR Lab" --json
+# Verify: response contains author.id and affiliation object
+
+# Find an imported author and enrich metadata
+lit author search "Vaswani" --json
+lit author edit 7 --email "..." --personal-url "..." --institution "Google" --json
+
+# Explore institution-linked papers
+lit author list --institution "Google" --json
+lit filter --affiliation "Google" --json
+
+# Merge duplicate author records after manual review
+lit author merge --target 3 --sources 15 --json
+```
+
+Use merge only when the user confirms records are the same person; do not auto-merge same-name authors.
 
 ### Manage Collections
 

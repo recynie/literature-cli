@@ -47,6 +47,8 @@ from .pdf import (
 from .database import DatabaseHealthService
 
 # Level 7: Core services
+from .affiliation import AffiliationService
+from .author import AuthorService
 from .collection import CollectionService
 from .search import SearchService
 from . import export
@@ -58,6 +60,8 @@ from .add_paper import AddPaperService
 
 __all__ = [
     "AddPaperService",
+    "AffiliationService",
+    "AuthorService",
     "CollectionService",
     "DatabaseHealthService",
     "export",

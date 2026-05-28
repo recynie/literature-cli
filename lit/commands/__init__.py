@@ -11,6 +11,8 @@ from lit.logger import CliLogger
 from lit import output
 from ng.services import (
     AddPaperService,
+    AffiliationService,
+    AuthorService,
     CollectionService,
     MetadataExtractor,
     PaperService,
@@ -45,6 +47,8 @@ def services(ctx: typer.Context) -> dict[str, Any]:
         "app": app,
         "pdf_manager": pdf_manager,
         "paper": paper_service,
+        "author": AuthorService(app),
+        "affiliation": AffiliationService(app),
         "search": SearchService(app),
         "collection": CollectionService(app),
         "metadata": metadata_extractor,

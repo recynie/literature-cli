@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 from fuzzywuzzy import fuzz
 from ng.db.database import get_db_session
-from ng.db.models import Author, Collection, Paper, PaperAuthor
+from ng.db.models import Affiliation, Author, Collection, Paper, PaperAuthor
 from ng.services.logger import Logger, NullLogger
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
@@ -191,6 +191,19 @@ class SearchService:
                     query.join(Paper.paper_authors)
                     .join(PaperAuthor.author)
                     .filter(Author.full_name.ilike(f'%{filters["author"]}%'))
+                )
+
+            if "affiliation" in filters:
+                query = (
+                    query.join(Paper.paper_authors)
+                    .join(PaperAuthor.author)
+                    .outerjoin(Author.affiliation)
+                    .filter(
+                        or_(
+                            Affiliation.institution.ilike(f'%{filters["affiliation"]}%'),
+                            Affiliation.department.ilike(f'%{filters["affiliation"]}%'),
+                        )
+                    )
                 )
 
             papers = query.order_by(Paper.added_date.desc()).all()

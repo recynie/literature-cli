@@ -12,7 +12,7 @@ import typer
 
 from lit.config import load_config_files
 from lit.logger import CliLogger
-from lit.commands import add, collect, db, delete, edit, export, list, pdf, search, show
+from lit.commands import add, affiliation, author, collect, db, delete, edit, export, list, pdf, search, show
 from ng.db.database import init_database
 
 
@@ -50,6 +50,8 @@ def main(
 
 
 app.add_typer(add.app, name="add", help="Import papers from external sources.")
+app.add_typer(author.app, name="author", help="Manage authors.")
+app.add_typer(affiliation.app, name="affiliation", help="Manage affiliations.")
 app.command("search")(search.search)
 app.command("filter")(search.filter)
 app.command("list")(list.list_papers)

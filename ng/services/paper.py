@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ng.db.database import get_db_session
-from ng.db.models import Author, Collection, Paper, PaperAuthor
+from ng.db.models import Affiliation, Author, Collection, Paper, PaperAuthor
 from ng.services import PDFManager
 from ng.services.logger import Logger, NullLogger
 from pluralizer import Pluralizer
@@ -149,24 +149,8 @@ class PaperService:
                     ).delete()
                     session.flush()
 
-                    for position, author_name in enumerate(authors):
-                        # Convert Author objects to strings if needed
-                        if hasattr(author_name, "full_name"):
-                            author_name_str = author_name.full_name
-                        else:
-                            author_name_str = str(author_name)
-
-                        # Find or create Author object by full_name (same as add_paper_from_metadata)
-                        author = (
-                            session.query(Author)
-                            .filter(Author.full_name == author_name_str)
-                            .first()
-                        )
-                        if not author:
-                            author = Author(full_name=author_name_str)
-                            session.add(author)
-                            session.flush()
-
+                    for position, author_data in enumerate(authors):
+                        author = self._get_or_create_author(session, author_data)
                         paper_author = PaperAuthor(
                             paper_id=paper.id, author=author, position=position
                         )
@@ -342,17 +326,8 @@ class PaperService:
             session.add(paper)
             session.flush()
 
-            for position, author_name in enumerate(authors):
-                author = (
-                    session.query(Author)
-                    .filter(Author.full_name == author_name)
-                    .first()
-                )
-                if not author:
-                    author = Author(full_name=author_name)
-                    session.add(author)
-                    session.flush()
-
+            for position, author_data in enumerate(authors):
+                author = self._get_or_create_author(session, author_data)
                 paper_author = PaperAuthor(
                     paper=paper, author=author, position=position
                 )
@@ -409,6 +384,55 @@ class PaperService:
                 )
 
             return paper_with_relationships
+
+    def _get_or_create_author(self, session, author_data: Any) -> Author:
+        """Find or create an author by full_name and apply optional affiliation data."""
+        if hasattr(author_data, "full_name"):
+            full_name = author_data.full_name
+            institution = getattr(getattr(author_data, "affiliation", None), "institution", None)
+            department = getattr(getattr(author_data, "affiliation", None), "department", None)
+        elif isinstance(author_data, dict):
+            full_name = author_data.get("full_name") or author_data.get("name")
+            institution = author_data.get("institution")
+            department = author_data.get("department")
+            affiliation = author_data.get("affiliation")
+            if isinstance(affiliation, dict):
+                institution = institution or affiliation.get("institution")
+                department = department or affiliation.get("department")
+            elif isinstance(affiliation, str):
+                institution = institution or affiliation
+        else:
+            full_name = str(author_data)
+            institution = None
+            department = None
+
+        full_name = (full_name or "").strip()
+        if not full_name:
+            raise ValueError("Author full_name is required")
+
+        author = session.query(Author).filter(Author.full_name == full_name).first()
+        if not author:
+            author = Author(full_name=full_name)
+            session.add(author)
+            session.flush()
+
+        if institution and not author.affiliation_id:
+            institution = institution.strip()
+            department = (department or "").strip() or None
+            query = session.query(Affiliation).filter(Affiliation.institution == institution)
+            query = query.filter(
+                Affiliation.department.is_(None)
+                if department is None
+                else Affiliation.department == department
+            )
+            affiliation = query.first()
+            if not affiliation:
+                affiliation = Affiliation(institution=institution, department=department)
+                session.add(affiliation)
+                session.flush()
+            author.affiliation = affiliation
+
+        return author
 
     def prepare_paper_data_for_edit(self, paper) -> dict:
         """Prepare paper data dictionary for EditDialog from a Paper model instance.

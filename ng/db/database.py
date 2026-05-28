@@ -48,6 +48,59 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
 
         columns_added = []
 
+        # Ensure affiliation table and author fields exist (migration 6c2b9a7f1d10)
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='affiliations'"
+        )
+        if not cursor.fetchone():
+            cursor.execute(
+                """
+                CREATE TABLE affiliations (
+                    id INTEGER NOT NULL,
+                    institution VARCHAR(255) NOT NULL,
+                    department VARCHAR(255),
+                    url VARCHAR(500),
+                    PRIMARY KEY (id),
+                    UNIQUE (institution, department)
+                )
+                """
+            )
+
+        cursor.execute("PRAGMA table_info(authors)")
+        author_columns = {row[1] for row in cursor.fetchall()}
+        if "affiliation_id" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN affiliation_id INTEGER")
+            columns_added.append("authors.affiliation_id")
+        if "personal_url" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN personal_url VARCHAR(500)")
+            columns_added.append("authors.personal_url")
+        if "scholar_url" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN scholar_url VARCHAR(500)")
+            columns_added.append("authors.scholar_url")
+        if "orcid" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN orcid VARCHAR(50)")
+            columns_added.append("authors.orcid")
+        if "affiliation" in author_columns:
+            cursor.execute(
+                "SELECT DISTINCT affiliation FROM authors WHERE affiliation IS NOT NULL AND TRIM(affiliation) != ''"
+            )
+            for (institution,) in cursor.fetchall():
+                cursor.execute(
+                    "INSERT OR IGNORE INTO affiliations (institution, department, url) VALUES (?, NULL, NULL)",
+                    (institution.strip(),),
+                )
+                cursor.execute(
+                    "SELECT id FROM affiliations WHERE institution = ? AND department IS NULL",
+                    (institution.strip(),),
+                )
+                row = cursor.fetchone()
+                if row:
+                    cursor.execute(
+                        "UPDATE authors SET affiliation_id = ? WHERE affiliation = ? AND affiliation_id IS NULL",
+                        (row[0], institution),
+                    )
+            # SQLite cannot drop columns safely on older versions; leave legacy column in fallback path.
+
         # Add html_snapshot_path column if missing (migration 03b4cd44700f)
         if "html_snapshot_path" not in existing_columns:
             cursor.execute(
@@ -70,7 +123,7 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
             )
             if cursor.fetchone():
                 cursor.execute(
-                    "UPDATE alembic_version SET version_num = '10f8534b9062'"
+                    "UPDATE alembic_version SET version_num = '6c2b9a7f1d10'"
                 )
 
             conn.commit()

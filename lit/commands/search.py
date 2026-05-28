@@ -50,6 +50,7 @@ def filter(
     venue: str | None = typer.Option(None, "--venue"),
     paper_type: str | None = typer.Option(None, "--type"),
     collection: str | None = typer.Option(None, "--collection"),
+    affiliation: str | None = typer.Option(None, "--affiliation"),
     query: str | None = typer.Option(None, "--query"),
     json: bool = JSON_OPTION,
 ):
@@ -69,6 +70,8 @@ def filter(
             filters["paper_type"] = paper_type
         if collection:
             filters["collection"] = collection
+        if affiliation:
+            filters["affiliation"] = affiliation
         if query:
             filters["all"] = query
         svc = services(ctx)

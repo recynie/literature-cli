@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 
 Base = declarative_base()
@@ -42,6 +42,25 @@ paper_collections = Table(
 )
 
 
+class Affiliation(Base):
+    """Institution/department affiliation model."""
+
+    __tablename__ = "affiliations"
+    __table_args__ = (UniqueConstraint("institution", "department"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    institution: Mapped[str] = mapped_column(String(255), nullable=False)
+    department: Mapped[Optional[str]] = mapped_column(String(255))
+    url: Mapped[Optional[str]] = mapped_column(String(500))
+
+    authors: Mapped[List["Author"]] = relationship(
+        "Author", back_populates="affiliation"
+    )
+
+    def __repr__(self):
+        return f"<Affiliation(institution='{self.institution}', department='{self.department}')>"
+
+
 class Author(Base):
     """Author model."""
 
@@ -52,9 +71,15 @@ class Author(Base):
     first_name: Mapped[Optional[str]] = mapped_column(String(100))
     last_name: Mapped[Optional[str]] = mapped_column(String(100))
     email: Mapped[Optional[str]] = mapped_column(String(255))
-    affiliation: Mapped[Optional[str]] = mapped_column(String(255))
+    affiliation_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("affiliations.id"))
+    personal_url: Mapped[Optional[str]] = mapped_column(String(500))
+    scholar_url: Mapped[Optional[str]] = mapped_column(String(500))
+    orcid: Mapped[Optional[str]] = mapped_column(String(50))
 
     # Relationships
+    affiliation: Mapped[Optional[Affiliation]] = relationship(
+        "Affiliation", back_populates="authors"
+    )
     paper_authors: Mapped[List["PaperAuthor"]] = relationship(
         "PaperAuthor", back_populates="author"
     )

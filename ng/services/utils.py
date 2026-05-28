@@ -209,7 +209,19 @@ def normalize_author_names(author_list):
             return []
 
     elif isinstance(author_list, list):
-        return [str(author).strip() for author in author_list if str(author).strip()]
+        normalized_authors = []
+        for author in author_list:
+            if isinstance(author, dict):
+                name = (author.get("full_name") or author.get("name") or "").strip()
+                if name:
+                    item = author.copy()
+                    item["full_name"] = name
+                    normalized_authors.append(item)
+                continue
+            author_text = str(author).strip()
+            if author_text:
+                normalized_authors.append(author_text)
+        return normalized_authors
 
     return []
 

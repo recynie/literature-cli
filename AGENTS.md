@@ -40,14 +40,16 @@ uv pip install -e ".[dev]"
 
 | 路径 | 描述 |
 |------|------|
-| `ng/db/models.py` | SQLAlchemy ORM 模型：Paper、Author、Collection、PaperAuthor |
+| `ng/db/models.py` | SQLAlchemy ORM 模型：Paper、Author、Affiliation、Collection、PaperAuthor |
 | `ng/db/database.py` | SQLite 连接管理，`get_db_session()` context manager |
-| `ng/alembic/` | Alembic schema 迁移脚本，含 4 个版本 |
+| `ng/alembic/` | Alembic schema 迁移脚本，含作者/机构 schema 变更 |
 | `ng/services/arxiv_utils.py` | arXiv 标识符集中处理：ID 清洗、从 Paper 提取 ID、判断是否 arXiv 论文、构建 PDF URL |
 | `ng/services/metadata.py` | 元数据提取：arXiv API、DBLP、OpenReview、DOI/Crossref、PDF（LLM）、BibTeX、RIS |
 | `ng/services/add_paper.py` | 各来源论文导入逻辑，调用 metadata.py 和 pdf.py |
-| `ng/services/paper.py` | 论文 CRUD |
-| `ng/services/search.py` | 全文搜索、模糊搜索、多字段过滤 |
+| `ng/services/paper.py` | 论文 CRUD，导入/更新作者时复用 Author 并可关联 Affiliation |
+| `ng/services/author.py` | 作者 CRUD、筛选、合并、查询作者论文 |
+| `ng/services/affiliation.py` | 机构 CRUD、搜索、get_or_create |
+| `ng/services/search.py` | 全文搜索、模糊搜索、多字段过滤（含 affiliation） |
 | `ng/services/collection.py` | Collection 增删改查，批量添加/移除论文 |
 | `ng/services/export.py` | 导出：BibTeX、IEEE、Markdown、HTML、JSON |
 | `ng/services/pdf.py` | PDF 下载、本地路径管理 |
@@ -72,15 +74,17 @@ uv pip install -e ".[dev]"
 | `lit/config.py` | JSON 配置加载，支持用户级与项目级 `auth.json` |
 | `lit/main.py` | typer app 入口，加载用户级与项目级配置、初始化数据库、注册所有子命令 |
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
-| `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Collection 序列化 |
+| `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化 |
 | `lit/commands/__init__.py` | 子命令共享 helper：service 初始化、ID 解析、错误输出 |
 | `lit/commands/add.py` | `lit add` 来源导入：arXiv、DBLP、OpenReview、DOI、PDF、BibTeX、RIS、manual |
-| `lit/commands/search.py` | `lit search` 和 `lit filter` |
+| `lit/commands/search.py` | `lit search` 和 `lit filter`，支持 `--affiliation` |
 | `lit/commands/list.py` | `lit list` |
 | `lit/commands/show.py` | `lit show` |
 | `lit/commands/edit.py` | `lit edit`，支持字段更新、PDF 元数据提取、PDF 摘要写入 notes |
 | `lit/commands/delete.py` | `lit delete`，支持单个 ID、批量 `--ids` 和 `--force` |
 | `lit/commands/export.py` | `lit export`，支持 BibTeX、IEEE、Markdown、HTML、JSON |
+| `lit/commands/author.py` | `lit author` 作者管理：list/search/show/add/edit/delete/merge |
+| `lit/commands/affiliation.py` | `lit affiliation` 机构管理：list/show/add/edit/delete |
 | `lit/commands/collect.py` | `lit collect` collection 管理 |
 | `lit/commands/pdf.py` | `lit pdf` 路径、打开、重新下载 |
 | `lit/commands/db.py` | `lit db check` / `lit db clean` |

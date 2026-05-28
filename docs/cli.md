@@ -141,6 +141,7 @@ lit filter --year-range 2020-2023 [--json]
 lit filter --venue "NeurIPS" [--json]
 lit filter --type conference [--json]   # conference|journal|preprint|workshop
 lit filter --collection "to-read" [--json]
+lit filter --affiliation "MIT" [--json]
 lit filter --query "diffusion" [--json]  # 全字段关键词过滤
 
 # 组合过滤
@@ -229,6 +230,89 @@ lit export --format json --json
 
 ---
 
+### `lit author` — 作者管理
+
+```bash
+lit author list [--json]
+lit author list --institution "MIT" [--json]
+lit author list --department "CSAIL" [--json]
+lit author list --has-email --has-url [--json]
+lit author list --no-affiliation [--json]
+
+lit author search "Hinton" [--json]
+lit author show 7 [--json]
+
+lit author add "Geoffrey Hinton" \
+  --first-name Geoffrey \
+  --last-name Hinton \
+  --email "hinton@cs.toronto.edu" \
+  --personal-url "https://www.cs.toronto.edu/~hinton/" \
+  --scholar-url "https://scholar.google.com/citations?user=JicYPdAAAAAJ" \
+  --orcid "0000-0001-2345-6789" \
+  --institution "University of Toronto" \
+  --department "Department of Computer Science" \
+  [--json]
+
+lit author edit 7 --email "" [--json]  # 传空字符串清除字段
+lit author edit 7 --institution "Google DeepMind" --department "" [--json]
+lit author delete 7 [--force] [--json]
+lit author merge --target 3 --sources 15,18 [--json]
+```
+
+`lit author show` 返回 author 对象和该作者关联论文列表。未加 `--force` 时，删除有关联论文的作者会被拒绝；`--force` 会解除论文关联后删除作者。
+
+Author JSON schema：
+
+```json
+{
+  "id": 1,
+  "full_name": "Geoffrey Hinton",
+  "first_name": "Geoffrey",
+  "last_name": "Hinton",
+  "email": "hinton@cs.toronto.edu",
+  "personal_url": "https://www.cs.toronto.edu/~hinton/",
+  "scholar_url": "https://scholar.google.com/citations?user=JicYPdAAAAAJ",
+  "orcid": "0000-0001-2345-6789",
+  "affiliation": {
+    "id": 3,
+    "institution": "University of Toronto",
+    "department": "Department of Computer Science",
+    "url": "https://www.cs.toronto.edu",
+    "author_count": 5
+  },
+  "paper_count": 12
+}
+```
+
+---
+
+### `lit affiliation` — 机构管理
+
+```bash
+lit affiliation list [--json]
+lit affiliation show 3 [--json]
+lit affiliation add "Tsinghua University" \
+  --department "Department of Computer Science" \
+  --url "https://www.cs.tsinghua.edu.cn" \
+  [--json]
+lit affiliation edit 3 --institution "..." --department "..." --url "..." [--json]
+lit affiliation delete 3 [--force] [--json]
+```
+
+Affiliation JSON schema：
+
+```json
+{
+  "id": 3,
+  "institution": "University of Toronto",
+  "department": "Department of Computer Science",
+  "url": "https://www.cs.toronto.edu",
+  "author_count": 5
+}
+```
+
+---
+
 ### `lit collect` — Collection 管理
 
 ```bash
@@ -292,6 +376,8 @@ lit/
 └── commands/
     ├── __init__.py      # 共享 helper：service 初始化、ID 解析、错误处理
     ├── add.py
+    ├── author.py
+    ├── affiliation.py
     ├── search.py
     ├── list.py
     ├── show.py
@@ -332,4 +418,4 @@ class CliLogger:
 - `--json`：`json.dumps` 输出，`default=str` 处理日期等非标准类型
 - human-readable：`rich` 表格（列表）或 `Panel`（详情）
 
-`paper_to_dict()` 将 ORM 对象转为公开 JSON schema，`pdf_path` 自动解析为绝对路径。
+`paper_to_dict()` 将 ORM 对象转为公开 JSON schema，`pdf_path` 自动解析为绝对路径。`author_to_dict()` / `affiliation_to_dict()` 分别序列化作者与机构对象。
