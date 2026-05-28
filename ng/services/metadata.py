@@ -22,6 +22,7 @@ from ng.services import (
     prompts,
     sanitize_for_logging,
 )
+from ng.services.logger import Logger, NullLogger
 from openai import OpenAI
 
 if TYPE_CHECKING:
@@ -43,8 +44,8 @@ def _truncate_for_logging(content: str, max_chars: int = 300) -> tuple[str, str]
 class MetadataExtractor:
     """Service for extracting metadata from various sources."""
 
-    def __init__(self, pdf_manager: PDFManager, app):
-        self.app = app
+    def __init__(self, pdf_manager: PDFManager, app: Logger | None = None):
+        self.app = app or NullLogger()
         self.pdf_manager = pdf_manager
 
     def extract_from_arxiv(self, arxiv_id: str) -> Dict[str, Any]:

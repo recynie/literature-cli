@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 from fuzzywuzzy import fuzz
 from ng.db.database import get_db_session
 from ng.db.models import Author, Collection, Paper, PaperAuthor
+from ng.services.logger import Logger, NullLogger
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 
@@ -10,8 +11,8 @@ from sqlalchemy.orm import joinedload
 class SearchService:
     """Service for searching and filtering papers."""
 
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, app: Logger | None = None):
+        self.app = app or NullLogger()
 
     def search_papers(self, query: str, fields: List[str] = None) -> List[Paper]:
         """Search papers by query in specified fields with fuzzy matching."""

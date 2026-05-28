@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 import pyperclip
 
 from ng.services.arxiv_utils import arxiv_pdf_url
+from ng.services.logger import Logger, NullLogger
 
 if TYPE_CHECKING:
     from ng.services import PDFManager
@@ -17,9 +18,9 @@ if TYPE_CHECKING:
 class SystemService:
     """Service for system integrations."""
 
-    def __init__(self, pdf_manager: PDFManager, app):
+    def __init__(self, pdf_manager: PDFManager, app: Logger | None = None):
         self.pdf_manager = pdf_manager
-        self.app = app
+        self.app = app or NullLogger()
 
     def open_pdf(self, pdf_path: str) -> Tuple[bool, str]:
         """Open PDF file in system default viewer. Returns (success, error_message)."""

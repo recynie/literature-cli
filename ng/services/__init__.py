@@ -14,6 +14,7 @@ from .constants import (
     DEFAULT_PDF_SUMMARY_PAGES,
     DEFAULT_PDF_METADATA_PAGES,
 )
+from .logger import Logger, NullLogger
 
 # Level 2: Formatting utilities
 from .formatting import (
@@ -77,6 +78,8 @@ __all__ = [
     "prompts",
     "llm_utils",
     "constants",
+    "Logger",
+    "NullLogger",
     # Formatting utilities
     "format_file_size",
     "format_authors_list",

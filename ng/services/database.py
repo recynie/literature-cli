@@ -12,6 +12,7 @@ from typing import Any, Dict
 from ng.db.database import get_pdf_directory
 from ng.db.models import Author, Paper, PaperAuthor
 from ng.services import PDFManager, format_file_size, format_title_by_words
+from ng.services.logger import Logger, NullLogger
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.orm import sessionmaker
 
@@ -19,9 +20,10 @@ from sqlalchemy.orm import sessionmaker
 class DatabaseHealthService:
     """Service for diagnosing and fixing database issues."""
 
-    def __init__(self, db_path: str = None, app=None):
-        # If db_path is not provided, get it from app
-        self.db_path = db_path if db_path else (app.db_path if app else None)
+    def __init__(self, db_path: str, app: Logger | None = None):
+        if not db_path:
+            raise ValueError("db_path is required")
+        self.db_path = db_path
         self.engine = create_engine(f"sqlite:///{self.db_path}")
 
         # Enable foreign key constraints for SQLite
@@ -33,7 +35,7 @@ class DatabaseHealthService:
         event.listen(self.engine, "connect", _enable_foreign_keys)
 
         self.Session = sessionmaker(bind=self.engine)
-        self.app = app
+        self.app = app or NullLogger()
 
     def _add_log(self, action: str, details: str):
         self.app._add_log(action, details)

@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from ng.db.database import get_db_session
 from ng.db.models import Collection, Paper, paper_collections
+from ng.services.logger import Logger, NullLogger
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
@@ -9,8 +10,8 @@ from sqlalchemy.orm import joinedload
 class CollectionService:
     """Service for managing collections."""
 
-    def __init__(self, app=None):
-        self.app = app
+    def __init__(self, app: Logger | None = None):
+        self.app = app or NullLogger()
 
     def get_all_collections(self) -> List[Collection]:
         """Get all collections with their papers eagerly loaded."""

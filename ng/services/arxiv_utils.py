@@ -7,10 +7,7 @@ use these functions instead of inline regex.
 from __future__ import annotations
 
 import re
-from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ng.db.models import Paper
+from typing import Optional
 
 
 # Regex patterns — defined once

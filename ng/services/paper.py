@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from ng.db.database import get_db_session
 from ng.db.models import Author, Collection, Paper, PaperAuthor
 from ng.services import PDFManager
+from ng.services.logger import Logger, NullLogger
 from pluralizer import Pluralizer
 from sqlalchemy import text
 from sqlalchemy.orm import joinedload
@@ -15,8 +16,8 @@ from sqlalchemy.orm import joinedload
 class PaperService:
     """Service for managing papers."""
 
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, app: Logger | None = None):
+        self.app = app or NullLogger()
         self._pluralizer = Pluralizer()
 
     def get_all_papers(self) -> List[Paper]:
@@ -456,14 +457,15 @@ class PaperService:
         notifications, and error handling consistently across the application.
 
         Args:
-            app: The main application instance for notifications and paper reloading
+            app: Logger used for notifications
             paper_id: ID of the paper being edited
 
         Returns:
             callable: Callback function for EditDialog results
         """
 
-        return lambda result: self._handle_edit_callback(result, app, paper_id)
+        logger = app or NullLogger()
+        return lambda result: self._handle_edit_callback(result, logger, paper_id)
 
     def _handle_edit_callback(self, result, app, paper_id):
         """Handle the edit dialog callback results."""
@@ -471,7 +473,6 @@ class PaperService:
             try:
                 updated_paper, error_message = self.update_paper(paper_id, result)
                 if updated_paper:
-                    app.load_papers()
                     app.notify(
                         f"Paper '{updated_paper.title}' updated successfully",
                         severity="information",

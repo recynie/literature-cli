@@ -18,6 +18,7 @@ from ng.services import (
     normalize_paper_data,
 )
 from ng.services.arxiv_utils import arxiv_pdf_url
+from ng.services.logger import Logger, NullLogger
 
 if TYPE_CHECKING:
     from ng.db.models import Paper
@@ -31,13 +32,13 @@ class AddPaperService:
         paper_service: PaperService,
         metadata_extractor: MetadataExtractor,
         system_service: SystemService,
-        app,
+        app: Logger | None = None,
     ):
         """Initialize the add paper service."""
         self.paper_service = paper_service
         self.metadata_extractor = metadata_extractor
         self.system_service = system_service
-        self.app = app
+        self.app = app or NullLogger()
 
     # Internal helpers
     def _build_paper_data(

@@ -12,15 +12,16 @@ from typing import Any, Callable, Dict, Optional, Tuple
 import PyPDF2
 from ng.db.database import get_pdf_directory
 from ng.services import MetadataExtractor, format_file_size, http_utils
+from ng.services.logger import Logger, NullLogger
 from pluralizer import Pluralizer
 
 
 class PDFService:
     """Centralized service for PDF operations including download, copy, and info management."""
 
-    def __init__(self, app):
+    def __init__(self, app: Logger | None = None):
         self.pdf_dir = get_pdf_directory()
-        self.app = app
+        self.app = app or NullLogger()
         self._pluralizer = Pluralizer()
 
     def get_pdf_page_count(self, pdf_path: str) -> int:
@@ -64,9 +65,9 @@ class PDFService:
 class PDFManager:
     """Service for managing PDF files with smart naming and handling."""
 
-    def __init__(self, app=None):
+    def __init__(self, app: Logger | None = None):
         self.pdf_dir = get_pdf_directory()
-        self.app = app
+        self.app = app or NullLogger()
 
     def get_absolute_path(self, relative_path: str) -> str:
         """Convert a relative PDF path to absolute path."""
@@ -571,8 +572,10 @@ class PDFManager:
 class PDFDownloadHandler:
     """Handles PDF download completion callbacks."""
 
-    def __init__(self, app, pdf_service: Optional[PDFService] = None):
-        self.app = app
+    def __init__(
+        self, app: Logger | None = None, pdf_service: Optional[PDFService] = None
+    ):
+        self.app = app or NullLogger()
         self.pdf_service = pdf_service or PDFService(app=app)
 
     def create_download_completion_callback(
@@ -635,14 +638,12 @@ class PDFDownloadHandler:
                 severity="information",
             )
 
-        self.app.load_papers()  # Reload to show PDF indicator
-
 
 class PDFExtractionHandler:
     """Handles PDF metadata extraction operations."""
 
-    def __init__(self, app, pdf_manager):
-        self.app = app
+    def __init__(self, app: Logger | None, pdf_manager):
+        self.app = app or NullLogger()
         self.pdf_manager = pdf_manager
 
     def create_extraction_task(self, pdf_path: str) -> Callable:

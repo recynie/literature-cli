@@ -51,6 +51,7 @@ uv pip install -e ".[dev]"
 | `ng/services/collection.py` | Collection 增删改查，批量添加/移除论文 |
 | `ng/services/export.py` | 导出：BibTeX、IEEE、Markdown、HTML、JSON |
 | `ng/services/pdf.py` | PDF 下载、本地路径管理 |
+| `ng/services/logger.py` | 服务层日志协议 `Logger` 与空实现 `NullLogger` |
 | `ng/services/prompts.py` | LLM prompt 模板（元数据提取、venue 规范化） |
 | `ng/services/llm_utils.py` | OpenAI 参数构建工具 |
 | `ng/services/constants.py` | 默认模型名、页数限制等常量 |
