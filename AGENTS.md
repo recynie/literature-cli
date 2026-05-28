@@ -31,7 +31,7 @@ uv pip install -e ".[dev]"
 | `pyproject.toml` | 项目配置，入口点 `lit = "lit.main:app"` |
 | `requirements.txt` | Python 依赖列表 |
 | `.gitignore` | Git 忽略规则，排除虚拟环境、缓存、本地配置和运行时数据 |
-| `.litcli/config.example.toml` | 通用配置模板（可提交）：model、base_url、data_dir 等 |
+| `.litcli/config.example.toml` | 通用配置模板（可提交）：model、base_url、data_dir、免费 API email/key 等 |
 | `.litcli/auth.example.toml` | 敏感配置模板（不可提交）：api_key |
 | `.venv/` | uv 虚拟环境（不提交） |
 
@@ -46,7 +46,12 @@ uv pip install -e ".[dev]"
 | `ng/alembic/` | Alembic schema 迁移脚本，含作者/机构 schema 变更 |
 | `ng/services/arxiv_utils.py` | arXiv 标识符集中处理：ID 清洗、从 Paper 提取 ID、判断是否 arXiv 论文、构建 PDF URL |
 | `ng/services/metadata.py` | 元数据提取：arXiv API、DBLP、OpenReview、DOI/Crossref、PDF（LLM）、BibTeX、RIS |
-| `ng/services/add_paper.py` | 各来源论文导入逻辑，调用 metadata.py 和 pdf.py |
+| `ng/services/identifier.py` | 统一导入入口 identifier 识别：文件、arXiv、DOI、OpenReview、DBLP、标题 |
+| `ng/services/openalex.py` | OpenAlex API 封装：按 DOI/标题检索 metadata、提取开放 PDF URL |
+| `ng/services/semantic_scholar.py` | Semantic Scholar API 封装：按 DOI/标题检索 metadata、提取开放 PDF URL |
+| `ng/services/unpaywall.py` | Unpaywall API 封装：按 DOI 获取开放 PDF URL |
+| `ng/services/fetch.py` | `lit edit --fetch` 补全逻辑：按 arXiv/DOI/标题拉取远端 metadata，只填空字段或 overwrite |
+| `ng/services/add_paper.py` | 各来源论文导入逻辑，含统一 `add_by_identifier()` dispatch |
 | `ng/services/paper.py` | 论文 CRUD，导入/更新作者时复用 Author 并可关联 Affiliation |
 | `ng/services/author.py` | 作者 CRUD、筛选、合并、查询作者论文 |
 | `ng/services/affiliation.py` | 机构 CRUD、搜索、get_or_create |
@@ -62,7 +67,7 @@ uv pip install -e ".[dev]"
 | `ng/services/validation.py` | 输入数据校验 |
 | `ng/services/formatting.py` | 作者名、文件大小等显示格式化 |
 | `ng/services/http_utils.py` | HTTP 请求封装 |
-| `ng/services/system.py` | 系统工具：剪贴板、文件打开 |
+| `ng/services/system.py` | 系统工具：剪贴板、文件打开、PDF fallback 下载链 |
 | `ng/services/database.py` | 数据库健康检查：孤立文件检测与清理 |
 
 ### `lit/` — CLI 层
@@ -77,11 +82,11 @@ uv pip install -e ".[dev]"
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
 | `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化 |
 | `lit/commands/__init__.py` | 子命令共享 helper：service 初始化、ID 解析、错误输出 |
-| `lit/commands/add.py` | `lit add` 来源导入：arXiv、DBLP、OpenReview、DOI、PDF、BibTeX、RIS、manual |
+| `lit/commands/add.py` | `lit add` 来源导入：统一 identifier 入口和 arXiv、DBLP、OpenReview、DOI、PDF、BibTeX、RIS、manual 子命令 |
 | `lit/commands/search.py` | `lit search` 和 `lit filter`，支持 `--affiliation` |
 | `lit/commands/list.py` | `lit list` |
 | `lit/commands/show.py` | `lit show` |
-| `lit/commands/edit.py` | `lit edit`，支持字段更新、PDF 元数据提取、PDF 摘要写入 notes |
+| `lit/commands/edit.py` | `lit edit`，支持字段更新、`--fetch` 补全、PDF 元数据提取、PDF 摘要写入 notes |
 | `lit/commands/delete.py` | `lit delete`，支持单个 ID、批量 `--ids` 和 `--force` |
 | `lit/commands/export.py` | `lit export`，支持 BibTeX、IEEE、Markdown、HTML、JSON |
 | `lit/commands/author.py` | `lit author` 作者管理：list/search/show/add/edit/delete/merge |
@@ -94,7 +99,12 @@ uv pip install -e ".[dev]"
 
 | 路径 | 描述 |
 |------|------|
-| `skills/literature-cli/SKILL.md` | pi skill 定义：路由规则、JSON schema、典型工作流和使用注意事项 |
+| `skills/literature-cli/SKILL.md` | pi skill 定义：推荐路由规则、典型工作流和使用注意事项 |
+| `skills/literature-cli/references/compatibility.md` | 兼容用法参考：旧版显式 `lit add arxiv/doi/...` 子命令 |
+| `skills/literature-cli/references/config.md` | skill 配置参考：TOML 文件、环境变量、免费 API 设置 |
+| `skills/literature-cli/references/schema.md` | skill JSON 输出 schema 与边界说明 |
+| `skills/literature-cli/scripts/config.example.toml` | skill 内置通用配置模板 |
+| `skills/literature-cli/scripts/auth.example.toml` | skill 内置敏感配置模板 |
 
 ### `docs/` — 文档
 

@@ -84,6 +84,18 @@ lit --help
 ### `lit add` — 导入论文
 
 ```bash
+# 统一入口：自动识别来源
+lit add 1706.03762 [--json]
+lit add https://arxiv.org/abs/1706.03762 [--json]
+lit add 10.5555/3295222.3295349 [--json]
+lit add https://doi.org/10.5555/3295222.3295349 [--json]
+lit add https://openreview.net/forum?id=abc123XYZ [--json]
+lit add https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17 [--json]
+lit add "Attention Is All You Need" [--json]
+lit add ./paper.pdf [--json]
+lit add ./refs.bib [--json]
+lit add ./refs.ris [--json]
+
 # arXiv（ID 或完整 URL）
 lit add arxiv 1706.03762 [--json]
 lit add arxiv https://arxiv.org/abs/1706.03762 [--json]
@@ -113,7 +125,7 @@ lit add manual --title "Paper Title" [--json]
 
 **返回**：单篇返回 paper 对象；批量（bib/ris）返回 `{ "ok": true, "papers": [...], "errors": [...], "count": N }`
 
-`lit add arxiv` 和 `lit add openreview` 会自动下载 PDF，返回结果中含 `pdf_path` 和 `pdf_error` 字段。
+`lit add arxiv`、`lit add openreview`、`lit add doi` 以及统一入口会按可用 metadata 尝试下载 PDF。fallback 顺序为 arXiv 直链、OpenReview 直链、Unpaywall、OpenAlex、Semantic Scholar，返回结果中含 `pdf_path` 和 `pdf_error` 字段。
 
 ---
 
@@ -188,6 +200,10 @@ lit edit 42 --pdf-path "/path/to/paper.pdf"
 
 # LLM 重新提取 PDF 元数据（需要 OPENAI_API_KEY，论文须有关联 PDF）
 lit edit 42 --extract-pdf [--json]
+
+# 根据已有 arXiv ID / DOI / 标题补全空字段；--overwrite 覆盖已有值
+lit edit 42 --fetch [--json]
+lit edit 42 --fetch --overwrite [--json]
 
 # LLM 生成摘要写入 notes（需要 OPENAI_API_KEY，论文须有关联 PDF）
 lit edit 42 --summarize [--json]
@@ -343,7 +359,7 @@ lit pdf path 42 [--json]
 # 用系统默认程序打开
 lit pdf open 42
 
-# 重新下载（支持 arXiv、OpenReview、直接 PDF URL）
+# 重新下载（支持 arXiv、OpenReview、DOI fallback、直接 PDF URL）
 lit pdf download 42 [--json]
 ```
 

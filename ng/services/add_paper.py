@@ -16,7 +16,10 @@ from ng.services import (
     SystemService,
     format_title_by_words,
     normalize_paper_data,
+    openalex,
+    semantic_scholar,
 )
+from ng.services.identifier import IdentifierType, detect
 from ng.services.arxiv_utils import arxiv_pdf_url
 from ng.services.logger import Logger, NullLogger
 
@@ -659,16 +662,16 @@ class AddPaperService:
             arxiv_id = arxiv_id.split(".", 1)[1] if "." in arxiv_id else arxiv_id
             return self.add_arxiv_paper(arxiv_id)
 
-        # Extract metadata from DOI using Crossref API
-        metadata = self.metadata_extractor.extract_from_doi(doi)
+        # Extract metadata from DOI using Crossref first, then free API fallbacks.
+        metadata = self._fetch_doi_metadata(doi_clean)
 
         # Prepare and normalize paper data
         paper_data = self._build_paper_data(
             metadata,
             overrides={
                 "paper_type": metadata.get("paper_type", "journal"),
-                "doi": doi,
-                "url": metadata.get("url", f"https://doi.org/{doi}"),
+                "doi": doi_clean,
+                "url": metadata.get("url", f"https://doi.org/{doi_clean}"),
             },
         )
 
@@ -679,8 +682,115 @@ class AddPaperService:
         paper = self.paper_service.add_paper_from_metadata(
             paper_data, authors, collections
         )
+        pdf_dir = get_pdf_directory()
+        pdf_path, pdf_error, download_duration = self.system_service.download_pdf(
+            "doi", doi_clean, pdf_dir, paper_data
+        )
 
-        return {"paper": paper, "pdf_path": None, "pdf_error": None}
+        return {
+            "paper": paper,
+            "pdf_path": pdf_path,
+            "pdf_error": pdf_error,
+            "download_duration": download_duration,
+        }
+
+    def add_by_identifier(self, raw_input: str) -> Dict[str, Any]:
+        """Add a paper from the unified identifier entrypoint."""
+        detected = detect(raw_input)
+        if detected.type == IdentifierType.PDF:
+            result = self.add_pdf_paper_async(detected.value)
+            paper = result["paper"]
+            metadata_result = self.extract_and_update_pdf_metadata(paper.id, detected.value)
+            if metadata_result.get("success"):
+                paper = self.paper_service.get_paper_by_id(paper.id)
+            return {
+                "paper": paper,
+                "pdf_path": None,
+                "pdf_error": metadata_result.get("error"),
+                "identifier_type": detected.type.value,
+            }
+        if detected.type == IdentifierType.BIBTEX:
+            papers, errors = self.add_bib_papers(detected.value)
+            return {
+                "papers": papers,
+                "errors": errors,
+                "count": len(papers),
+                "identifier_type": detected.type.value,
+            }
+        if detected.type == IdentifierType.RIS:
+            papers, errors = self.add_ris_papers(detected.value)
+            return {
+                "papers": papers,
+                "errors": errors,
+                "count": len(papers),
+                "identifier_type": detected.type.value,
+            }
+        if detected.type == IdentifierType.ARXIV:
+            result = self.add_arxiv_paper(detected.value)
+        elif detected.type == IdentifierType.DOI:
+            result = self.add_doi_paper(detected.value)
+        elif detected.type == IdentifierType.OPENREVIEW:
+            result = self.add_openreview_paper(detected.value)
+        elif detected.type == IdentifierType.DBLP:
+            result = self.add_dblp_paper(detected.value)
+        elif detected.type == IdentifierType.TITLE:
+            result = self.add_title_paper(detected.value)
+        else:
+            raise ValueError(f"Unsupported identifier type: {detected.type}")
+        result["identifier_type"] = detected.type.value
+        return result
+
+    def add_title_paper(self, title: str) -> Dict[str, Any]:
+        """Search for a paper by title using OpenAlex, then Semantic Scholar."""
+        metadata = None
+        errors = []
+        for name, fetcher in (
+            ("OpenAlex", lambda: openalex.search_by_title(title)),
+            ("Semantic Scholar", lambda: semantic_scholar.search_by_title(title)),
+        ):
+            try:
+                metadata = fetcher()
+                if metadata:
+                    break
+            except Exception as exc:
+                errors.append(f"{name}: {exc}")
+        if not metadata:
+            detail = "; ".join(errors) if errors else "No matches found"
+            raise Exception(f"Failed to find metadata for title '{title}': {detail}")
+
+        paper_data = self._build_paper_data(metadata)
+        authors = paper_data.get("authors", [])
+        paper = self.paper_service.add_paper_from_metadata(
+            paper_data, authors, []
+        )
+        pdf_path = None
+        pdf_error = None
+        download_duration = 0.0
+        if paper_data.get("doi") or paper_data.get("pdf_url"):
+            pdf_path, pdf_error, download_duration = self.system_service.download_pdf(
+                "metadata", paper_data.get("doi") or title, get_pdf_directory(), paper_data
+            )
+        return {
+            "paper": paper,
+            "pdf_path": pdf_path,
+            "pdf_error": pdf_error,
+            "download_duration": download_duration,
+        }
+
+    def _fetch_doi_metadata(self, doi: str) -> Dict[str, Any]:
+        errors = []
+        for name, fetcher in (
+            ("Crossref", lambda: self.metadata_extractor.extract_from_doi(doi)),
+            ("OpenAlex", lambda: openalex.search_by_doi(doi)),
+            ("Semantic Scholar", lambda: semantic_scholar.search_by_doi(doi)),
+        ):
+            try:
+                metadata = fetcher()
+                if metadata:
+                    return metadata
+            except Exception as exc:
+                errors.append(f"{name}: {exc}")
+        raise Exception(f"Failed to fetch DOI metadata: {'; '.join(errors)}")
 
     def add_manual_paper(self, title: str = "") -> Dict[str, Any]:
         """Add a paper manually with basic defaults."""

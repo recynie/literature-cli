@@ -4,6 +4,7 @@ import json
 import os
 import re
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -44,6 +45,9 @@ def _truncate_for_logging(content: str, max_chars: int = 300) -> tuple[str, str]
 class MetadataExtractor:
     """Service for extracting metadata from various sources."""
 
+    _arxiv_last_request_time: float = 0.0
+    _ARXIV_MIN_INTERVAL: float = 3.0
+
     def __init__(self, pdf_manager: PDFManager, app: Logger | None = None):
         self.app = app or NullLogger()
         self.pdf_manager = pdf_manager
@@ -55,6 +59,11 @@ class MetadataExtractor:
         arxiv_id = clean_arxiv_id(arxiv_id)
 
         try:
+            elapsed = time.time() - MetadataExtractor._arxiv_last_request_time
+            if elapsed < MetadataExtractor._ARXIV_MIN_INTERVAL:
+                time.sleep(MetadataExtractor._ARXIV_MIN_INTERVAL - elapsed)
+            MetadataExtractor._arxiv_last_request_time = time.time()
+
             url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
             response = http_utils.get(url, timeout=30)
 

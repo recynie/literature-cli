@@ -14,6 +14,7 @@ from ng.services import (
     AffiliationService,
     AuthorService,
     CollectionService,
+    FetchMetadataService,
     MetadataExtractor,
     PaperService,
     PDFManager,
@@ -53,6 +54,9 @@ def services(ctx: typer.Context) -> dict[str, Any]:
         "collection": CollectionService(app),
         "metadata": metadata_extractor,
         "system": system_service,
+        "fetch": FetchMetadataService(
+            paper_service, metadata_extractor, app
+        ),
         "add": AddPaperService(
             paper_service, metadata_extractor, system_service, app
         ),

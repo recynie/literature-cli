@@ -39,6 +39,9 @@ CONFIG_ENV_MAP = {
     "openai.temperature": "OPENAI_TEMPERATURE",
     "litcli.data_dir": "LITCLI_DATA_DIR",
     "litcli.pdf_pages": "LITCLI_PDF_PAGES",
+    "services.unpaywall_email": "UNPAYWALL_EMAIL",
+    "services.openalex_email": "OPENALEX_EMAIL",
+    "services.semantic_scholar_api_key": "SEMANTIC_SCHOLAR_API_KEY",
 }
 
 

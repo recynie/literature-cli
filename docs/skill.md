@@ -8,20 +8,24 @@ Skill 定义位于 `skills/literature-cli/SKILL.md`，已完整实现。
 
 | 用户意图 | 命令 |
 |---------|------|
-| 从 arXiv 导入论文 | `lit add arxiv <id-or-url> --json` |
-| 从 DBLP 导入论文 | `lit add dblp <url> --json` |
-| 从 OpenReview 导入 | `lit add openreview <id-or-url> --json` |
-| 从 DOI 导入 | `lit add doi <doi> --json` |
-| 导入本地 PDF | `lit add pdf <path> --json` |
+| 导入单篇论文或文件 | `lit add <identifier-or-path-or-title> --json` |
+| 从 arXiv 导入论文 | `lit add <id-or-url> --json` |
+| 从 DBLP 导入论文 | `lit add <url> --json` |
+| 从 OpenReview 导入 | `lit add <url> --json` |
+| 从 DOI 导入 | `lit add <doi-or-url> --json` |
+| 按标题搜索导入 | `lit add "paper title" --json` |
+| 导入本地 PDF | `lit add <path.pdf> --json` |
+| 批量导入 BibTeX | `lit add <path.bib> --json` |
+| 批量导入 RIS | `lit add <path.ris> --json` |
 | 手动创建条目 | `lit add manual --title "..." --json` |
-| 批量导入 BibTeX | `lit add bib <path> --json` |
-| 批量导入 RIS | `lit add ris <path> --json` |
 | 搜索论文 | `lit search "<query>" --json` |
 | 模糊搜索 | `lit search "<query>" --fuzzy --threshold 60 --json` |
 | 按字段过滤 | `lit filter --author/--year/--year-range/--venue/--type/--collection/--query --json` |
 | 列出所有论文 | `lit list --json` |
 | 查看论文详情 | `lit show <id> --json` |
 | 编辑元数据 | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--url/--notes/--year <value> --json` |
+| 补全缺失元数据 | `lit edit <id> --fetch --json` |
+| 覆盖刷新元数据 | `lit edit <id> --fetch --overwrite --json` |
 | 重新提取 PDF 元数据 | `lit edit <id> --extract-pdf --json`（需要 OPENAI_API_KEY）|
 | 生成摘要写入 notes | `lit edit <id> --summarize --json`（需要 OPENAI_API_KEY）|
 | 删除论文 | `lit delete <id> --force --json` 或 `lit delete --ids 1,2,3 --force --json` |
@@ -49,12 +53,15 @@ Skill 定义位于 `skills/literature-cli/SKILL.md`，已完整实现。
 ### Pattern 1：查找并导入一篇论文
 
 ```bash
-# 从 arXiv 导入
-lit add arxiv 1706.03762 --json
+# 统一入口自动识别 arXiv、DOI、OpenReview、DBLP、文件路径或标题
+lit add 1706.03762 --json
 # 返回 paper 对象，含分配的 id 和 pdf_path
 
 # 从 DOI 导入
-lit add doi 10.1038/s41586-023-06139-9 --json
+lit add 10.1038/s41586-023-06139-9 --json
+
+# 补全已有条目的空字段；只有用户明确要求刷新时才加 --overwrite
+lit edit 42 --fetch --json
 ```
 
 ### Pattern 2：搜索并导出
@@ -105,7 +112,7 @@ lit pdf path 42 --json
 
 ```bash
 # 从 BibTeX 文件批量导入
-lit add bib ./exported_refs.bib --json
+lit add ./exported_refs.bib --json
 # 返回: { "ok": true, "papers": [...], "errors": [...], "count": 42 }
 # errors 记录失败条目（如重复），不影响其他条目导入
 ```
@@ -159,8 +166,10 @@ lit add bib ./exported_refs.bib --json
 ## 注意事项
 
 - **始终使用 `--json`** 处理命令输出，human-readable 格式不保证稳定
-- `lit add pdf`、`lit edit --extract-pdf`、`lit edit --summarize` 依赖 LLM，需要 `OPENAI_API_KEY`
-- `lit add arxiv` / `lit add openreview` 会自动下载 PDF，网络较慢时需等待
-- `lit add bib` / `lit add ris` 批量导入时，`errors` 字段记录失败条目，不影响其他条目
+- 默认使用 `lit add <identifier-or-path-or-title>` 导入；旧的显式来源子命令仅作为兼容用法保留在 `skills/literature-cli/references/compatibility.md`
+- `lit add <path.pdf>`、`lit edit --extract-pdf`、`lit edit --summarize` 依赖 LLM，需要 `OPENAI_API_KEY`
+- 导入时可通过 arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载 PDF，网络较慢时需等待
+- `lit add <path.bib>` / `lit add <path.ris>` 批量导入时，`errors` 字段记录失败条目，不影响其他条目
+- `lit edit --fetch` 只补空字段；只有用户明确要求覆盖时才使用 `--overwrite`
 - `lit delete` 同时删除本地 PDF 文件，不可恢复；自动化场景使用 `--force` 跳过确认
 - 所有变更命令返回 `"ok": true/false`，继续下一步前应检查此字段

@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 import pyperclip
 
 from ng.services.arxiv_utils import arxiv_pdf_url
+from ng.services import openalex, semantic_scholar, unpaywall
+from ng.services.identifier import IdentifierType, detect
 from ng.services.logger import Logger, NullLogger
 
 if TYPE_CHECKING:
@@ -141,23 +143,31 @@ class SystemService:
                 f"Created/verified download directory: {download_dir}",
             )
 
-            # Generate URL based on source
+            # Generate URL candidates based on source, then append metadata fallbacks.
+            candidates: list[tuple[str, str]] = []
             if source == "arxiv":
-                pdf_url = arxiv_pdf_url(identifier)
+                candidates.append(("arXiv", arxiv_pdf_url(identifier)))
                 self.app._add_log(
                     "system_download_debug",
-                    f"arXiv: original_id='{identifier}' -> url='{pdf_url}'",
+                    f"arXiv: original_id='{identifier}'",
                 )
             elif source == "openreview":
-                pdf_url = f"https://openreview.net/pdf?id={identifier}"
+                candidates.append(("OpenReview", f"https://openreview.net/pdf?id={identifier}"))
                 self.app._add_log(
                     "system_download_debug",
-                    f"OpenReview: identifier='{identifier}' -> url='{pdf_url}'",
+                    f"OpenReview: identifier='{identifier}'",
                 )
+            elif source in {"doi", "metadata"}:
+                candidates.extend(self._metadata_pdf_candidates(identifier, paper_data or {}))
             else:
                 error_msg = f"Unsupported source: {source}"
                 self.app._add_log("system_download_error", error_msg)
                 return None, error_msg
+
+            candidates.extend(self._metadata_pdf_candidates(identifier, paper_data or {}))
+            candidates = self._dedupe_candidates(candidates)
+            if not candidates:
+                return None, "No PDF URL candidates found", 0.0
 
             # Use PDFManager to handle everything with proper naming
             self.app._add_log(
@@ -168,38 +178,41 @@ class SystemService:
             # Set app reference for PDFManager logging
             self.pdf_manager.app = self.app
 
-            # Download with proper temp->final naming
-            self.app._add_log(
-                "system_download_debug",
-                f"Calling PDFManager.download_pdf_from_url_with_proper_naming with url='{pdf_url}'",
-            )
-
-            pdf_path, error_msg, download_duration = (
-                self.pdf_manager.download_pdf_from_url_with_proper_naming(
-                    pdf_url, paper_data
-                )
-            )
-
-            self.app._add_log(
-                "system_download_timing",
-                f"PDFManager operation took {download_duration:.2f} seconds",
-            )
-
-            self.app._add_log(
-                "system_download_result",
-                f"PDFManager result: pdf_path='{pdf_path}', error_msg='{error_msg}'",
-            )
-
-            if error_msg:
+            errors = []
+            total_duration = 0.0
+            for label, pdf_url in candidates:
                 self.app._add_log(
-                    "system_download_error", f"PDF download failed: {error_msg}"
+                    "system_download_debug",
+                    f"Trying {label} PDF candidate: {pdf_url}",
                 )
-                return None, error_msg, download_duration
+                pdf_path, error_msg, download_duration = (
+                    self.pdf_manager.download_pdf_from_url_with_proper_naming(
+                        pdf_url, paper_data or {}
+                    )
+                )
+                total_duration += download_duration
 
-            self.app._add_log(
-                "system_download_success", f"PDF download successful: {pdf_path}"
-            )
-            return pdf_path, "", download_duration
+                self.app._add_log(
+                    "system_download_timing",
+                    f"{label} PDFManager operation took {download_duration:.2f} seconds",
+                )
+
+                self.app._add_log(
+                    "system_download_result",
+                    f"{label} result: pdf_path='{pdf_path}', error_msg='{error_msg}'",
+                )
+
+                if not error_msg:
+                    self.app._add_log(
+                        "system_download_success",
+                        f"PDF download successful via {label}: {pdf_path}",
+                    )
+                    return pdf_path, "", total_duration
+                errors.append(f"{label}: {error_msg}")
+
+            error_msg = "PDF download failed from all candidates: " + "; ".join(errors)
+            self.app._add_log("system_download_error", error_msg)
+            return None, error_msg, total_duration
 
         except Exception as e:
             error_msg = f"Error downloading PDF: {str(e)}\n{traceback.format_exc()}"
@@ -208,6 +221,66 @@ class SystemService:
                 f"Exception in SystemService.download_pdf: {error_msg}",
             )
             return None, error_msg, 0.0
+
+    def _metadata_pdf_candidates(
+        self, identifier: str, paper_data: Dict[str, Any]
+    ) -> list[tuple[str, str]]:
+        candidates: list[tuple[str, str]] = []
+        doi = (paper_data.get("doi") or "").strip()
+        preprint_id = (paper_data.get("preprint_id") or "").strip()
+        url = (paper_data.get("url") or "").strip()
+
+        if not doi and identifier:
+            try:
+                detected = detect(identifier)
+                if detected.type == IdentifierType.DOI:
+                    doi = detected.value
+            except Exception:
+                pass
+
+        if preprint_id.lower().startswith("arxiv"):
+            arxiv_id = preprint_id.split()[-1]
+            candidates.append(("arXiv", arxiv_pdf_url(arxiv_id)))
+
+        if "openreview.net/forum" in url and "id=" in url:
+            openreview_id = url.split("id=", 1)[1].split("&", 1)[0]
+            candidates.append(("OpenReview", f"https://openreview.net/pdf?id={openreview_id}"))
+
+        if doi:
+            try:
+                pdf_url = unpaywall.get_oa_pdf_url(doi)
+                if pdf_url:
+                    candidates.append(("Unpaywall", pdf_url))
+            except Exception as exc:
+                self.app._add_log("pdf_candidate_warning", f"Unpaywall: {exc}")
+            try:
+                pdf_url = openalex.get_pdf_url(doi)
+                if pdf_url:
+                    candidates.append(("OpenAlex", pdf_url))
+            except Exception as exc:
+                self.app._add_log("pdf_candidate_warning", f"OpenAlex: {exc}")
+            try:
+                pdf_url = semantic_scholar.get_pdf_url(doi)
+                if pdf_url:
+                    candidates.append(("Semantic Scholar", pdf_url))
+            except Exception as exc:
+                self.app._add_log("pdf_candidate_warning", f"Semantic Scholar: {exc}")
+
+        explicit_pdf = paper_data.get("pdf_url")
+        if explicit_pdf:
+            candidates.append(("metadata", explicit_pdf))
+
+        return candidates
+
+    def _dedupe_candidates(self, candidates: list[tuple[str, str]]) -> list[tuple[str, str]]:
+        seen = set()
+        deduped = []
+        for label, url in candidates:
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            deduped.append((label, url))
+        return deduped
 
     def open_file_location(self, file_path: str) -> Tuple[bool, str]:
         """Open file location in Finder/File Explorer and select the file. Returns (success, error_message)."""

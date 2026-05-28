@@ -38,8 +38,10 @@
 
 ## Notes
 
-- `lit add pdf`, `lit edit --extract-pdf`, and `lit edit --summarize` require an OpenAI API key from the shell environment, project `.litcli/auth.json`, or `~/.config/litcli/auth.json`.
-- `lit add arxiv` and `lit add openreview` download PDFs and may take longer on slow networks.
-- `lit add bib` and `lit add ris` return `errors` for failed entries while importing valid ones.
+- Prefer `lit add <identifier-or-path-or-title> --json` for imports. It detects PDF/BibTeX/RIS files, arXiv, DOI, OpenReview, DBLP, and title search.
+- `lit add <path.pdf>`, `lit edit --extract-pdf`, and `lit edit --summarize` require an OpenAI API key from the shell environment, project `.litcli/auth.toml`, or `~/.config/litcli/auth.toml`.
+- Imports with available metadata may download PDFs through arXiv, OpenReview, Unpaywall, OpenAlex, or Semantic Scholar and may take longer on slow networks.
+- `lit add <path.bib>` and `lit add <path.ris>` return `errors` for failed entries while importing valid ones.
+- `lit edit <id> --fetch` fills missing fields only; add `--overwrite` only when the user explicitly wants remote metadata to replace existing values.
 - `lit delete` removes linked local PDF files. Use `--force` in automated workflows.
 - All mutating commands return `"ok": true/false` — check this before proceeding with the next step.

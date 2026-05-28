@@ -30,6 +30,10 @@ from .formatting import (
 from . import validation
 from . import prompts
 from . import llm_utils
+from . import identifier
+from . import openalex
+from . import semantic_scholar
+from . import unpaywall
 
 # Level 4: Metadata extractor
 from .metadata import MetadataExtractor
@@ -56,6 +60,7 @@ from . import export
 # Level 8: Higher-level services
 from .paper import PaperService
 from .system import SystemService
+from .fetch import FetchMetadataService
 from .add_paper import AddPaperService
 
 __all__ = [
@@ -65,6 +70,10 @@ __all__ = [
     "CollectionService",
     "DatabaseHealthService",
     "export",
+    "identifier",
+    "openalex",
+    "semantic_scholar",
+    "unpaywall",
     "http_utils",
     "MetadataExtractor",
     "PaperService",
@@ -75,6 +84,7 @@ __all__ = [
     "PDFDownloadTaskFactory",
     "SearchService",
     "SystemService",
+    "FetchMetadataService",
     "fix_broken_lines",
     "normalize_paper_data",
     "sanitize_for_logging",

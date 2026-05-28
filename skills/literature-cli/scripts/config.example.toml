@@ -11,3 +11,8 @@ temperature = 0.7
 [litcli]
 data_dir  = "~/.litcli"
 pdf_pages = 10
+
+[services]
+unpaywall_email = "you@example.com"
+openalex_email = "you@example.com"
+# semantic_scholar_api_key = ""

@@ -1,6 +1,6 @@
 ---
 name: literature-cli
-description: "Manage research papers from the command line: import (arXiv/DOI/BibTeX/RIS/manual/PDF), search, filter, edit, export (BibTeX/Markdown/IEEE/HTML/JSON), collections, and database maintenance. Use when the user wants to create a literature base, conduct an academic research, or mentions papers (arXiv IDs, DOIs, BibTeX, RIS), citations, lit cli, literature CLI, literature search, paper organization, reference management, or bibliography export."
+description: "Manage research papers from the command line: import papers with a unified identifier entrypoint, search, filter, edit/fetch metadata, export citations, organize collections, manage authors/affiliations, PDFs, and database maintenance. Use when the user wants to create a literature base, conduct academic research, or mentions papers, arXiv IDs, DOIs, BibTeX, RIS, citations, lit cli, literature CLI, literature search, paper organization, reference management, or bibliography export."
 ---
 
 # LiteratureCLI
@@ -11,20 +11,24 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 
 | User intent | Command |
 |---|---|
-| Import from arXiv | `lit add arxiv <id-or-url> --json` |
-| Import from DBLP | `lit add dblp <url> --json` |
-| Import from OpenReview | `lit add openreview <id-or-url> --json` |
-| Import from DOI | `lit add doi <doi> --json` |
-| Import local PDF | `lit add pdf <path> --json` |
+| Import one paper or file | `lit add <identifier-or-path-or-title> --json` |
+| Import from arXiv | `lit add <arxiv-id-or-url> --json` |
+| Import from DOI | `lit add <doi-or-doi-url> --json` |
+| Import from OpenReview | `lit add <openreview-url> --json` |
+| Import from DBLP | `lit add <dblp-url> --json` |
+| Import by title search | `lit add "paper title" --json` |
+| Import local PDF | `lit add <path.pdf> --json` |
+| Bulk import BibTeX | `lit add <path.bib> --json` |
+| Bulk import RIS | `lit add <path.ris> --json` |
 | Manual entry | `lit add manual --title "..." --json` |
-| Bulk import BibTeX | `lit add bib <path> --json` |
-| Bulk import RIS | `lit add ris <path> --json` |
 | Search papers | `lit search "<query>" --json` |
 | Fuzzy search | `lit search "<query>" --fuzzy --threshold 60 --json` |
 | Filter papers | `lit filter --author/--year/--year-range/--venue/--type/--collection/--affiliation/--query --json` |
 | List papers | `lit list --json` |
 | Show details | `lit show <id> --json` |
 | Edit metadata | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--url/--notes/--year <value> --json` |
+| Fetch missing metadata | `lit edit <id> --fetch --json` |
+| Refresh metadata with overwrite | `lit edit <id> --fetch --overwrite --json` |
 | Extract PDF metadata | `lit edit <id> --extract-pdf --json` (needs OPENAI_API_KEY) |
 | Summarize paper | `lit edit <id> --summarize --json` (needs OPENAI_API_KEY) |
 | Delete papers | `lit delete <id> --force --json` or `lit delete --ids 1,2,3 --force --json` |
@@ -57,24 +61,36 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Database health check | `lit db check --json` |
 | Clean orphaned files | `lit db clean --json` |
 
-PDF downloads only save/link the file. To parse downloaded PDF content, run `lit edit <id> --extract-pdf --json`; to generate notes from the PDF, run `lit edit <id> --summarize --json`.
+For import, prefer `lit add <identifier>` unless the user explicitly asks for a legacy subcommand. The importer detects local `.pdf` / `.bib` / `.ris` files, arXiv IDs and URLs, DOI strings and URLs, OpenReview URLs, DBLP URLs, and otherwise treats the input as a title search.
+
+PDF download uses a fallback chain when metadata is available: arXiv direct link, OpenReview direct link, Unpaywall, OpenAlex, then Semantic Scholar. PDF downloads only save/link the file. To parse downloaded PDF content, run `lit edit <id> --extract-pdf --json`; to generate notes from the PDF, run `lit edit <id> --summarize --json`.
 
 ## Workflows
 
 ### Find And Import
 
 ```bash
-# 1. Import from arXiv
-lit add arxiv 1706.03762 --json
+# 1. Import from arXiv, DOI, URL, file, or title through the unified entrypoint
+lit add 1706.03762 --json
 # Verify: list shows new paper with PDF
 
 # 2. Import from DOI
-lit add doi 10.1038/s41586-023-06139-9 --json
-# Verify: metadata fetched from Crossref
+lit add 10.1038/s41586-023-06139-9 --json
+# Verify: metadata fetched; PDF may be downloaded through fallback providers
 
 # 3. Bulk import from BibTeX/RIS file
-lit add bib ./references.bib --json
+lit add ./references.bib --json
 # Verify: count matches expected, check errors list for duplicates
+```
+
+### Enrich Existing Metadata
+
+```bash
+# Fill only empty fields using arXiv / DOI / title metadata
+lit edit 42 --fetch --json
+
+# Overwrite existing fields only when the user asks to refresh metadata
+lit edit 42 --fetch --overwrite --json
 ```
 
 ### Search And Export
@@ -127,11 +143,11 @@ lit pdf open 42
 
 ```bash
 # Import BibTeX (errors for duplicates are returned separately)
-lit add bib ./exported_refs.bib --json
+lit add ./exported_refs.bib --json
 # Verify: check errors[] for already-existing papers
 
 # Import RIS
-lit add ris ./exported_refs.ris --json
+lit add ./exported_refs.ris --json
 ```
 
 ### Manage Authors And Affiliations
@@ -190,6 +206,7 @@ lit collect purge --json
 |------|----------|
 | [references/schema.md](references/schema.md) | JSON object schemas returned by `--json` and edge-case notes |
 | [references/config.md](references/config.md) | Configuration files (`config.toml` / `auth.toml`): locations, all fields, defaults |
+| [references/compatibility.md](references/compatibility.md) | Backward-compatible explicit `lit add` subcommands retained for scripts |
 | [references/db.md](references/db.md) | SQLite schema: all tables, columns, types, constraints, and ER summary |
 | [scripts/config.example.toml](scripts/config.example.toml) | Ready-to-copy general config template |
 | [scripts/auth.example.toml](scripts/auth.example.toml) | Ready-to-copy secrets template |

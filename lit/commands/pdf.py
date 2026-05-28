@@ -107,10 +107,13 @@ def download(ctx: typer.Context, paper_id: int, json: bool = JSON_OPTION):
                 flag,
             )
             return
+        elif paper.doi:
+            source = "doi"
+            identifier = paper.doi
 
         if not source or not identifier:
             output.error(
-                "PDF download is only supported for arXiv, OpenReview, or direct PDF URLs",
+                "PDF download is only supported when arXiv, OpenReview, DOI, or direct PDF URL metadata is available",
                 "INVALID_INPUT",
                 flag,
             )
@@ -119,6 +122,9 @@ def download(ctx: typer.Context, paper_id: int, json: bool = JSON_OPTION):
             "title": paper.title,
             "authors": [a.full_name for a in paper.get_ordered_authors()],
             "year": paper.year,
+            "doi": paper.doi,
+            "preprint_id": paper.preprint_id,
+            "url": paper.url,
         }
         pdf_path, pdf_error, duration = svc["system"].download_pdf(
             source, identifier, get_pdf_directory(), paper_data

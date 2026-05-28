@@ -21,6 +21,8 @@ def edit(
     url: str | None = typer.Option(None, "--url"),
     pdf_path: str | None = typer.Option(None, "--pdf-path"),
     extract_pdf: bool = typer.Option(False, "--extract-pdf"),
+    fetch: bool = typer.Option(False, "--fetch"),
+    overwrite: bool = typer.Option(False, "--overwrite"),
     summarize: bool = typer.Option(False, "--summarize"),
     json: bool = JSON_OPTION,
 ):
@@ -82,10 +84,21 @@ def edit(
                 output.error(warning or "Failed to update paper", "INVALID_INPUT", flag)
             paper = paper_service.get_paper_by_id(paper_id)
 
+        fetched_fields = []
+        fetch_metadata = None
+        if fetch:
+            result = svc["fetch"].fetch_metadata_for_paper(paper, overwrite=overwrite)
+            paper = result["paper"]
+            fetched_fields = result.get("updated") or []
+            fetch_metadata = result.get("metadata")
+            warning = warning or result.get("warning") or ""
+
         output.print_result(
             {
                 "ok": True,
                 "paper": output.paper_to_dict(paper),
+                "fetched_fields": fetched_fields,
+                "fetched_metadata": fetch_metadata,
                 "warning": warning or None,
             },
             flag,

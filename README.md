@@ -4,13 +4,13 @@
 
 ## 功能
 
-- **多来源导入**：arXiv、DBLP、OpenReview、DOI、本地 PDF、BibTeX、RIS
+- **多来源导入**：统一 `lit add <identifier>` 自动识别 arXiv、DOI、OpenReview、DBLP、标题、本地 PDF、BibTeX、RIS；旧子命令保留
 - **智能元数据提取**：结构化 API 直接解析；PDF 和非标准来源通过 LLM 提取
 - **检索与过滤**：全文搜索、模糊搜索、多字段组合过滤
 - **Collection 管理**：自定义分组，批量操作
 - **作者与机构管理**：独立 Author/Affiliation CRUD，支持个人主页、ORCID、学校/院系两层机构
 - **多格式导出**：BibTeX、IEEE、Markdown、HTML、JSON
-- **PDF 管理**：自动下载、本地存储
+- **PDF 管理**：arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载，本地存储
 
 ## 快速开始
 
@@ -26,10 +26,10 @@ uv tool install .
 
 # 配置 OpenAI API key（PDF 元数据提取需要）
 mkdir -p ~/.config/litcli
-cp .litcli/auth.example.json ~/.config/litcli/auth.json
+cp .litcli/auth.example.toml ~/.config/litcli/auth.toml
 
 # 导入一篇论文
-lit add arxiv 1706.03762
+lit add 1706.03762
 
 # 搜索
 lit search "attention mechanism" --json
@@ -69,14 +69,17 @@ lit export --format bibtex --collection "my-papers"
 | `OPENAI_MODEL` | `gpt-4o-mini` | LLM 模型 |
 | `LITCLI_DATA_DIR` | `~/.litcli` | 数据目录 |
 | `LITCLI_PDF_PAGES` | `10` | PDF 提取页数 |
+| `UNPAYWALL_EMAIL` | — | Unpaywall polite email |
+| `OPENALEX_EMAIL` | — | OpenAlex polite pool email |
+| `SEMANTIC_SCHOLAR_API_KEY` | — | Semantic Scholar 可选 API key |
 
-参考 `.litcli/auth.example.json` 配置。
+参考 `.litcli/config.example.toml` 和 `.litcli/auth.example.toml` 配置。
 
 配置加载优先级：
 
 1. 已导出的环境变量，例如 `export OPENAI_API_KEY=...`
-2. 当前目录或父目录中的项目级 `.litcli/auth.json`
-3. 用户级 `~/.config/litcli/auth.json`
+2. 当前目录或父目录中的项目级 `.litcli/config.toml` / `.litcli/auth.toml`
+3. 用户级 `~/.config/litcli/config.toml` / `~/.config/litcli/auth.toml`
 
 `uv tool install` 后从任意目录运行 `lit` 时，推荐使用用户级配置文件。
 
