@@ -45,6 +45,8 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Database health check | `lit db check --json` |
 | Clean orphaned files | `lit db clean --json` |
 
+PDF downloads only save/link the file. To parse downloaded PDF content, run `lit edit <id> --extract-pdf --json`; to generate notes from the PDF, run `lit edit <id> --summarize --json`.
+
 ## Workflows
 
 ### Find And Import
