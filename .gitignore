@@ -23,7 +23,8 @@ dist/
 # Local configuration and secrets
 .env
 .env.*
-.litcli/auth.json
+.litcli/auth.toml
+~/.config/litcli/auth.toml
 
 # Local databases and runtime data
 *.db

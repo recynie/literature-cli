@@ -1,0 +1,5 @@
+# auth.toml — secrets (never commit this file)
+# Copy this file to auth.toml and fill in your API key.
+
+[openai]
+api_key = "your_openai_api_key_here"

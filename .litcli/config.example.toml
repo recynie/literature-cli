@@ -1,0 +1,13 @@
+# config.toml — shareable settings
+# Copy this file to config.toml (or ~/.config/litcli/config.toml) and adjust.
+# Do NOT put secrets here; use auth.toml instead.
+
+[openai]
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o-mini"
+max_tokens = 4000
+temperature = 0.7
+
+[litcli]
+data_dir = "~/.litcli"
+pdf_pages = 10

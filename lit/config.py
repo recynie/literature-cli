@@ -1,18 +1,36 @@
-"""Configuration loading for LiteratureCLI."""
+"""Configuration loading for LiteratureCLI.
+
+Two TOML files are supported:
+  config.toml  — shareable settings (model, base_url, data_dir, …)
+  auth.toml    — secrets (api_key); never commit this file
+
+Both files are looked up in two locations, applied in order so that
+later values override earlier ones (env vars always win):
+  1. ~/.config/litcli/config.toml
+  2. ~/.config/litcli/auth.toml
+  3. <project>/.litcli/config.toml
+  4. <project>/.litcli/auth.toml
+"""
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Any
 
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
-USER_CONFIG_PATH = Path("~/.config/litcli/auth.json").expanduser()
+
+USER_CONFIG_DIR = Path("~/.config/litcli").expanduser()
 PROJECT_CONFIG_DIR = ".litcli"
-CONFIG_FILENAME = "auth.json"
 
+CONFIG_FILENAME = "config.toml"
+AUTH_FILENAME = "auth.toml"
 
+# Maps dotted TOML key paths to environment variable names.
 CONFIG_ENV_MAP = {
     "openai.api_key": "OPENAI_API_KEY",
     "openai.base_url": "OPENAI_BASE_URL",
@@ -24,37 +42,55 @@ CONFIG_ENV_MAP = {
 }
 
 
-def find_project_config(start: Path | None = None) -> Path | None:
+def find_project_config_dir(start: Path | None = None) -> Path | None:
+    """Walk up from *start* (default: cwd) to find a .litcli/ directory."""
     current = (start or Path.cwd()).resolve()
     for directory in (current, *current.parents):
-        config_path = directory / PROJECT_CONFIG_DIR / CONFIG_FILENAME
-        if config_path.is_file():
-            return config_path
+        candidate = directory / PROJECT_CONFIG_DIR
+        if candidate.is_dir():
+            return candidate
     return None
 
 
 def load_config_files() -> None:
+    """Load config.toml and auth.toml from user and project locations.
+
+    Environment variables set before this call are never overwritten.
+    """
+    project_dir = find_project_config_dir()
+
+    candidates: list[Path] = [
+        USER_CONFIG_DIR / CONFIG_FILENAME,
+        USER_CONFIG_DIR / AUTH_FILENAME,
+    ]
+    if project_dir is not None:
+        candidates += [
+            project_dir / CONFIG_FILENAME,
+            project_dir / AUTH_FILENAME,
+        ]
+
     original_env = set(os.environ)
-    for config_path in (USER_CONFIG_PATH, find_project_config()):
-        if config_path is None or not config_path.is_file():
+    for config_path in candidates:
+        if not config_path.is_file():
             continue
-        config = _read_json_config(config_path)
+        config = _read_toml_config(config_path)
         for key_path, env_name in CONFIG_ENV_MAP.items():
-            value = _get_nested_value(config, key_path)
-            if value is None or env_name in original_env:
+            if env_name in original_env:
                 continue
-            os.environ[env_name] = str(value)
+            value = _get_nested_value(config, key_path)
+            if value is not None:
+                os.environ[env_name] = str(value)
 
 
-def _read_json_config(config_path: Path) -> dict[str, Any]:
+def _read_toml_config(config_path: Path) -> dict[str, Any]:
     try:
-        with config_path.open(encoding="utf-8") as file:
-            config = json.load(file)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Invalid JSON config file: {config_path}") from exc
+        with config_path.open("rb") as fh:
+            config = tomllib.load(fh)
+    except Exception as exc:
+        raise ValueError(f"Invalid TOML config file: {config_path}") from exc
 
     if not isinstance(config, dict):
-        raise ValueError(f"JSON config must be an object: {config_path}")
+        raise ValueError(f"TOML config must be a table: {config_path}")
     return config
 
 

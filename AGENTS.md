@@ -31,7 +31,8 @@ uv pip install -e ".[dev]"
 | `pyproject.toml` | 项目配置，入口点 `lit = "lit.main:app"` |
 | `requirements.txt` | Python 依赖列表 |
 | `.gitignore` | Git 忽略规则，排除虚拟环境、缓存、本地配置和运行时数据 |
-| `.litcli/auth.example.json` | JSON 配置模板，含 OpenAI 认证和 `LITCLI_DATA_DIR` 等 |
+| `.litcli/config.example.toml` | 通用配置模板（可提交）：model、base_url、data_dir 等 |
+| `.litcli/auth.example.toml` | 敏感配置模板（不可提交）：api_key |
 | `.venv/` | uv 虚拟环境（不提交） |
 
 ### `ng/` — 核心业务逻辑
@@ -71,7 +72,7 @@ uv pip install -e ".[dev]"
 | 路径 | 描述 |
 |------|------|
 | `lit/__init__.py` | CLI package init |
-| `lit/config.py` | JSON 配置加载，支持用户级与项目级 `auth.json` |
+| `lit/config.py` | TOML 配置加载，分 `config.toml`（通用）和 `auth.toml`（敏感），支持用户级（`~/.config/litcli/`）与项目级（`.litcli/`） |
 | `lit/main.py` | typer app 入口，加载用户级与项目级配置、初始化数据库、注册所有子命令 |
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
 | `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化 |
