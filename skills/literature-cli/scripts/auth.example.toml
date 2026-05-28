@@ -1,0 +1,5 @@
+# auth.toml — secrets
+# Copy to ~/.config/litcli/auth.toml (user-level) or .litcli/auth.toml (project-level).
+
+[openai]
+api_key = "sk-..."

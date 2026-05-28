@@ -1,6 +1,6 @@
 ---
 name: literature-cli
-description: "Manage research papers from the command line: import (arXiv/DOI/BibTeX/RIS/manual/PDF), search, filter, edit, export (BibTeX/Markdown/IEEE/HTML/JSON), collections, and database maintenance. Use when the user mentions papers, citations, arXiv IDs, DOIs, BibTeX, RIS, literature search, paper organization, reference management, or bibliography export."
+description: "Manage research papers from the command line: import (arXiv/DOI/BibTeX/RIS/manual/PDF), search, filter, edit, export (BibTeX/Markdown/IEEE/HTML/JSON), collections, and database maintenance. Use when the user mentions papers, citations, arXiv IDs, DOIs, BibTeX, RIS, literature search, create a literature base, paper organization, reference management, or bibliography export."
 ---
 
 # LiteratureCLI
@@ -186,4 +186,10 @@ lit collect purge --json
 
 ## Reference
 
-See [REFERENCE.md](REFERENCE.md) for JSON object schemas and notes.
+| File | Contents |
+|------|----------|
+| [references/schema.md](references/schema.md) | JSON object schemas returned by `--json` and edge-case notes |
+| [references/config.md](references/config.md) | Configuration files (`config.toml` / `auth.toml`): locations, all fields, defaults |
+| [references/db.md](references/db.md) | SQLite schema: all tables, columns, types, constraints, and ER summary |
+| [scripts/config.example.toml](scripts/config.example.toml) | Ready-to-copy general config template |
+| [scripts/auth.example.toml](scripts/auth.example.toml) | Ready-to-copy secrets template |
