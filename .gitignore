@@ -24,6 +24,7 @@ dist/
 .env
 .env.*
 .litcli/auth.toml
+.litcli/config.toml
 ~/.config/litcli/auth.toml
 
 # Local databases and runtime data
@@ -32,6 +33,8 @@ dist/
 *.sqlite3
 papers.db
 pdfs/
+parsed/
+.litcli/parsed/
 html_snapshots/
 
 # Local reference checkout
