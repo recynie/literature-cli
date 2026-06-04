@@ -13,6 +13,16 @@ from rich.panel import Panel
 from rich.table import Table
 
 from ng.db.models import Affiliation, Author, Collection, Paper
+from ng.services.platform_ids import (
+    arxiv_url,
+    dblp_url_from_key,
+    dblp_url_from_pid,
+    openalex_url,
+    openreview_url,
+    orcid_url,
+    semantic_scholar_author_url,
+    semantic_scholar_paper_url,
+)
 
 
 console = Console()
@@ -24,7 +34,7 @@ def _iso(value: Any) -> str | None:
     return None
 
 
-def paper_to_dict(paper: Paper) -> dict[str, Any]:
+def paper_to_dict(paper: Paper, use_keys: bool = False) -> dict[str, Any]:
     """Convert a detached Paper ORM object to the public JSON schema."""
     ordered_authors = paper.get_ordered_authors()
     pdf_path = paper.pdf_path
@@ -36,7 +46,7 @@ def paper_to_dict(paper: Paper) -> dict[str, Any]:
         except Exception:
             pass
 
-    return {
+    data = {
         "id": paper.id,
         "title": paper.title,
         "authors": [author.full_name for author in ordered_authors],
@@ -47,7 +57,6 @@ def paper_to_dict(paper: Paper) -> dict[str, Any]:
         "abstract": paper.abstract,
         "notes": paper.notes,
         "doi": paper.doi,
-        "preprint_id": paper.preprint_id,
         "category": paper.category,
         "url": paper.url,
         "pdf_path": pdf_path,
@@ -55,6 +64,23 @@ def paper_to_dict(paper: Paper) -> dict[str, Any]:
         "added_date": _iso(paper.added_date),
         "modified_date": _iso(paper.modified_date),
     }
+    if use_keys:
+        data.update({
+            "arxiv_id": paper.arxiv_id,
+            "openreview_id": paper.openreview_id,
+            "dblp_key": paper.dblp_key,
+            "openalex_id": paper.openalex_id,
+            "semantic_scholar_id": paper.semantic_scholar_id,
+        })
+    else:
+        data.update({
+            "arxiv_url": arxiv_url(paper.arxiv_id) if paper.arxiv_id else None,
+            "openreview_url": openreview_url(paper.openreview_id) if paper.openreview_id else None,
+            "dblp_url": dblp_url_from_key(paper.dblp_key) if paper.dblp_key else None,
+            "openalex_url": openalex_url(paper.openalex_id) if paper.openalex_id else None,
+            "semantic_scholar_url": semantic_scholar_paper_url(paper.semantic_scholar_id) if paper.semantic_scholar_id else None,
+        })
+    return data
 
 
 def affiliation_to_dict(affiliation: Affiliation) -> dict[str, Any]:
@@ -72,11 +98,11 @@ def affiliation_to_dict(affiliation: Affiliation) -> dict[str, Any]:
     }
 
 
-def author_to_dict(author: Author) -> dict[str, Any]:
+def author_to_dict(author: Author, use_keys: bool = False) -> dict[str, Any]:
     """Convert an Author ORM object to the public JSON schema."""
     paper_authors = list(getattr(author, "paper_authors", []) or [])
     affiliation = getattr(author, "affiliation", None)
-    return {
+    data = {
         "id": author.id,
         "full_name": author.full_name,
         "first_name": author.first_name,
@@ -85,10 +111,24 @@ def author_to_dict(author: Author) -> dict[str, Any]:
         "personal_url": author.personal_url,
         "faculty_url": author.faculty_url,
         "scholar_url": author.scholar_url,
-        "orcid": author.orcid,
         "affiliation": affiliation_to_dict(affiliation) if affiliation else None,
         "paper_count": len(paper_authors),
     }
+    if use_keys:
+        data.update({
+            "orcid": author.orcid,
+            "openalex_id": author.openalex_id,
+            "semantic_scholar_id": author.semantic_scholar_id,
+            "dblp_pid": author.dblp_pid,
+        })
+    else:
+        data.update({
+            "orcid_url": orcid_url(author.orcid) if author.orcid else None,
+            "openalex_url": openalex_url(author.openalex_id) if author.openalex_id else None,
+            "semantic_scholar_url": semantic_scholar_author_url(author.semantic_scholar_id) if author.semantic_scholar_id else None,
+            "dblp_url": dblp_url_from_pid(author.dblp_pid) if author.dblp_pid else None,
+        })
+    return data
 
 
 def collection_to_dict(collection: Collection) -> dict[str, Any]:
@@ -167,6 +207,10 @@ def print_human(data: Any):
         _print_collection_detail(data["collection"])
         return
 
+    if isinstance(data, Mapping) and "references" in data:
+        _print_reference_table(data)
+        return
+
     if isinstance(data, Mapping) and data.get("ok") is False:
         console.print(f"[red]{data.get('error', 'Error')}[/red]")
         return
@@ -213,7 +257,21 @@ def _print_paper_detail(paper: Mapping[str, Any]):
         f"Venue: {paper.get('venue_full') or ''} ({paper.get('venue_acronym') or ''})",
         f"Type: {paper.get('paper_type') or ''}",
     ]
-    for key in ("doi", "preprint_id", "url", "pdf_path"):
+    for key in (
+        "doi",
+        "arxiv_id",
+        "arxiv_url",
+        "openreview_id",
+        "openreview_url",
+        "dblp_key",
+        "dblp_url",
+        "openalex_id",
+        "openalex_url",
+        "semantic_scholar_id",
+        "semantic_scholar_url",
+        "url",
+        "pdf_path",
+    ):
         if paper.get(key):
             lines.append(f"{key}: {paper[key]}")
     if paper.get("collections"):
@@ -258,7 +316,10 @@ def _print_author_detail(author: Mapping[str, Any]):
         f"Personal URL: {author.get('personal_url') or ''}",
         f"Faculty URL: {author.get('faculty_url') or ''}",
         f"Scholar URL: {author.get('scholar_url') or ''}",
-        f"ORCID: {author.get('orcid') or ''}",
+        f"ORCID: {author.get('orcid') or author.get('orcid_url') or ''}",
+        f"OpenAlex: {author.get('openalex_id') or author.get('openalex_url') or ''}",
+        f"Semantic Scholar: {author.get('semantic_scholar_id') or author.get('semantic_scholar_url') or ''}",
+        f"DBLP: {author.get('dblp_pid') or author.get('dblp_url') or ''}",
         f"Affiliation: {affiliation.get('institution') or ''} {affiliation.get('department') or ''}",
         f"Papers: {author.get('paper_count') or 0}",
     ]
@@ -324,3 +385,43 @@ def _print_collection_detail(collection: Mapping[str, Any]):
             )
         )
     )
+
+
+def _print_reference_table(data: Mapping[str, Any]):
+    source = data.get("source") or {}
+    source_label = (
+        source.get("crossref_title")
+        or source.get("title")
+        or source.get("doi")
+        or source.get("crossref_doi")
+        or "Crossref work"
+    )
+    console.print(f"[bold]{source_label}[/bold]")
+    if source.get("crossref_doi"):
+        console.print(f"DOI: {source['crossref_doi']}")
+    if data.get("matched"):
+        matched = data["matched"]
+        console.print(
+            f"Matched: {matched.get('title') or ''} ({matched.get('doi') or ''})"
+        )
+    if data.get("warning"):
+        console.print(f"[yellow]{data['warning']}[/yellow]")
+
+    table = Table(show_lines=False)
+    table.add_column("#", justify="right")
+    table.add_column("Title", overflow="fold")
+    table.add_column("Author", overflow="fold")
+    table.add_column("Year", justify="right")
+    table.add_column("DOI")
+
+    for index, ref in enumerate(data.get("references") or [], start=1):
+        title = ref.get("article-title") or ref.get("unstructured") or ""
+        table.add_row(
+            str(index),
+            title,
+            ref.get("author") or "",
+            str(ref.get("year") or ""),
+            ref.get("DOI") or "",
+        )
+    console.print(table)
+    console.print(f"{data.get('count', 0)} reference(s)")

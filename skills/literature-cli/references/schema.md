@@ -16,7 +16,11 @@
   "abstract": "...",
   "notes": "...",
   "doi": null,
-  "preprint_id": "arXiv 1706.03762",
+  "arxiv_url": "https://arxiv.org/abs/1706.03762",
+  "openreview_url": null,
+  "dblp_url": null,
+  "openalex_url": null,
+  "semantic_scholar_url": null,
   "category": "cs.CL",
   "url": "https://arxiv.org/abs/1706.03762",
   "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
@@ -39,6 +43,7 @@
 ## Notes
 
 - Prefer `lit add <identifier-or-path-or-title> --json` for imports. It detects PDF/BibTeX/RIS files, arXiv, DOI, OpenReview, DBLP, and title search.
+- By default, platform-backed identifier fields are exposed as URLs. Use `--key` on read/list/search/show commands to request raw IDs/keys instead.
 - `lit add <path.pdf>`, `lit edit --extract-pdf`, and `lit edit --summarize` require an OpenAI API key from the shell environment, project `.litcli/auth.toml`, or `~/.config/litcli/auth.toml`.
 - Imports with available metadata may download PDFs through arXiv, OpenReview, Unpaywall, OpenAlex, or Semantic Scholar and may take longer on slow networks.
 - `lit add <path.bib>` and `lit add <path.ris>` return `errors` for failed entries while importing valid ones.

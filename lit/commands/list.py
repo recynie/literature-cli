@@ -12,6 +12,7 @@ def list_papers(
     ctx: typer.Context,
     limit: int | None = typer.Option(None, "--limit", min=1),
     sort: str = typer.Option("added_date", "--sort", help="year|title|added_date"),
+    key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
     json: bool = JSON_OPTION,
 ):
     flag = as_json(ctx, json)
@@ -31,7 +32,7 @@ def list_papers(
         output.print_result(
             {
                 "ok": True,
-                "papers": [output.paper_to_dict(paper) for paper in papers],
+                "papers": [output.paper_to_dict(paper, use_keys=key) for paper in papers],
                 "count": len(papers),
             },
             flag,

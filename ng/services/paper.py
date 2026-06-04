@@ -293,10 +293,10 @@ class PaperService:
         """Add paper with authors and collections."""
         with get_db_session() as session:
             existing_paper = None
-            if paper_data.get("preprint_id"):
+            if paper_data.get("arxiv_id"):
                 existing_paper = (
                     session.query(Paper)
-                    .filter(Paper.preprint_id == paper_data["preprint_id"])
+                    .filter(Paper.arxiv_id == paper_data["arxiv_id"])
                     .first()
                 )
             elif paper_data.get("doi"):
@@ -406,6 +406,10 @@ class PaperService:
             institution = None
             department = None
 
+        openalex_id = author_data.get("openalex_id") if isinstance(author_data, dict) else None
+        semantic_scholar_id = author_data.get("semantic_scholar_id") if isinstance(author_data, dict) else None
+        dblp_pid = author_data.get("dblp_pid") if isinstance(author_data, dict) else None
+
         full_name = (full_name or "").strip()
         if not full_name:
             raise ValueError("Author full_name is required")
@@ -431,6 +435,13 @@ class PaperService:
                 session.add(affiliation)
                 session.flush()
             author.affiliation = affiliation
+
+        if openalex_id and not author.openalex_id:
+            author.openalex_id = str(openalex_id).strip()
+        if semantic_scholar_id and not author.semantic_scholar_id:
+            author.semantic_scholar_id = str(semantic_scholar_id).strip()
+        if dblp_pid and not author.dblp_pid:
+            author.dblp_pid = str(dblp_pid).strip()
 
         return author
 
@@ -458,7 +469,11 @@ class PaperService:
             "pages": paper.pages,
             "paper_type": paper.paper_type,
             "doi": paper.doi,
-            "preprint_id": paper.preprint_id,
+            "arxiv_id": paper.arxiv_id,
+            "openreview_id": paper.openreview_id,
+            "dblp_key": paper.dblp_key,
+            "openalex_id": paper.openalex_id,
+            "semantic_scholar_id": paper.semantic_scholar_id,
             "category": paper.category,
             "url": paper.url,
             "pdf_path": paper.pdf_path,

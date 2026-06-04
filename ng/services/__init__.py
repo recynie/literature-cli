@@ -62,6 +62,7 @@ from .paper import PaperService
 from .system import SystemService
 from .fetch import FetchMetadataService
 from .add_paper import AddPaperService
+from .references import ReferenceService
 
 __all__ = [
     "AddPaperService",
@@ -85,6 +86,7 @@ __all__ = [
     "SearchService",
     "SystemService",
     "FetchMetadataService",
+    "ReferenceService",
     "fix_broken_lines",
     "normalize_paper_data",
     "sanitize_for_logging",

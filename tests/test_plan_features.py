@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import typer
 from typer.testing import CliRunner
 
 from lit.commands import add as add_command
+from lit.commands import references as references_command
 from ng.services import openalex, semantic_scholar, unpaywall
+from ng.services.platform_ids import dblp_url_from_key, openreview_url
 from ng.services.fetch import FetchMetadataService
 from ng.services.identifier import IdentifierType, detect
 from ng.services.logger import NullLogger
+from ng.services.references import ReferenceService
 from ng.services.system import SystemService
 
 
@@ -35,7 +39,9 @@ def test_identifier_detection_rules(tmp_path):
     assert detect("2505.15134v2").type == IdentifierType.ARXIV
     assert detect("https://doi.org/10.1145/123.456").value == "10.1145/123.456"
     assert detect("https://openreview.net/forum?id=abc123").value == "abc123"
-    assert detect("https://dblp.org/rec/conf/test/item.html").type == IdentifierType.DBLP
+    dblp = detect("https://dblp.org/rec/conf/test/item.html")
+    assert dblp.type == IdentifierType.DBLP
+    assert dblp.value == "conf/test/item"
     assert detect("A Search Title").type == IdentifierType.TITLE
 
 
@@ -83,12 +89,13 @@ def test_semantic_scholar_and_unpaywall_pdf_mapping(monkeypatch):
             return FakeResponse(
                 {
                     "title": "semantic paper",
-                    "authors": [{"name": "Grace Hopper"}],
+                "authors": [{"name": "Grace Hopper", "authorId": "A1"}],
                 "year": 2024,
                 "venue": "S2 Conf",
-                    "externalIds": {"DOI": "10.1/s2", "ArXiv": "2401.00001"},
-                    "openAccessPdf": {"url": "https://example.test/s2.pdf"},
-                }
+                "externalIds": {"DOI": "10.1/s2", "ArXiv": "2401.00001"},
+                "openAccessPdf": {"url": "https://example.test/s2.pdf"},
+                "paperId": "P1",
+            }
             )
         return FakeResponse(
             {"best_oa_location": {"url_for_pdf": "https://example.test/upw.pdf"}}
@@ -98,8 +105,9 @@ def test_semantic_scholar_and_unpaywall_pdf_mapping(monkeypatch):
 
     s2_metadata = semantic_scholar.search_by_doi("10.1/s2")
 
-    assert s2_metadata["authors"] == [{"full_name": "Grace Hopper"}]
-    assert s2_metadata["preprint_id"] == "arXiv 2401.00001"
+    assert s2_metadata["authors"] == [{"full_name": "Grace Hopper", "semantic_scholar_id": "A1"}]
+    assert s2_metadata["arxiv_id"] == "2401.00001"
+    assert s2_metadata["semantic_scholar_id"] == "P1"
     assert s2_metadata["pdf_url"] == "https://example.test/s2.pdf"
     assert unpaywall.get_oa_pdf_url("10.1/s2") == "https://example.test/upw.pdf"
 
@@ -115,7 +123,11 @@ def test_fetch_metadata_fills_only_empty_fields_unless_overwrite():
         paper_type=None,
         doi="10.1/example",
         url=None,
-        preprint_id=None,
+        arxiv_id=None,
+        openreview_id=None,
+        dblp_key=None,
+        openalex_id=None,
+        semantic_scholar_id=None,
         category=None,
         volume=None,
         issue=None,
@@ -158,6 +170,11 @@ def test_fetch_metadata_fills_only_empty_fields_unless_overwrite():
     assert "title" in result["updated"]
     assert paper.title == "Remote Title"
     assert paper.venue_full == "Remote Venue"
+
+
+def test_platform_url_helpers():
+    assert openreview_url("abc123") == "https://openreview.net/forum?id=abc123"
+    assert dblp_url_from_key("conf/nips/VaswaniSPUJGKP17") == "https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17"
 
 
 def test_pdf_download_fallback_tries_unpaywall_then_openalex(monkeypatch, tmp_path):
@@ -254,3 +271,144 @@ def test_add_doi_uses_clean_doi_for_metadata_and_pdf(monkeypatch, tmp_path):
     assert ("download", "doi", "10.1145/example", "10.1145/example") in calls
     paper_data = next(value for kind, value in calls if kind == "paper_data")
     assert paper_data["doi"] == "10.1145/example"
+
+
+def test_crossref_references_by_doi_preserves_sparse_fields(monkeypatch):
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append((url, kwargs))
+        return FakeResponse(
+            {
+                "message": {
+                    "DOI": "10.1000/source",
+                    "title": ["Source Paper"],
+                    "reference": [
+                        {
+                            "DOI": "10.1000/ref",
+                            "article-title": "Reference Paper",
+                            "author": "Lovelace, Ada",
+                            "year": "1843",
+                            "key": "ref1",
+                            "extra-field": "kept in raw",
+                        },
+                        {"unstructured": "Sparse reference only"},
+                    ],
+                }
+            }
+        )
+
+    import ng.services.references as references
+
+    monkeypatch.setattr(references.http_utils, "get", fake_get)
+    service = ReferenceService(None, NullLogger())
+
+    result = service.references_for_doi("https://doi.org/10.1000/source")
+
+    assert calls[0][0] == "https://api.crossref.org/works/10.1000/source"
+    assert result["count"] == 2
+    assert result["source"]["crossref_doi"] == "10.1000/source"
+    assert result["references"][0]["article-title"] == "Reference Paper"
+    assert result["references"][0]["raw"]["extra-field"] == "kept in raw"
+    assert result["references"][1]["DOI"] is None
+    assert result["references"][1]["unstructured"] == "Sparse reference only"
+
+
+def test_crossref_references_title_lookup_fetches_matched_doi(monkeypatch):
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append((url, kwargs.get("params")))
+        if kwargs.get("params"):
+            return FakeResponse(
+                {
+                    "message": {
+                        "items": [
+                            {
+                                "DOI": "10.1000/matched",
+                                "title": ["Matched Paper"],
+                                "score": 42.0,
+                            }
+                        ]
+                    }
+                }
+            )
+        return FakeResponse(
+            {
+                "message": {
+                    "DOI": "10.1000/matched",
+                    "title": ["Matched Paper"],
+                    "reference": [{"article-title": "Reference"}],
+                }
+            }
+        )
+
+    import ng.services.references as references
+
+    monkeypatch.setattr(references.http_utils, "get", fake_get)
+    service = ReferenceService(None, NullLogger())
+
+    result = service.references_for_title("matched paper")
+
+    assert calls[0] == (
+        "https://api.crossref.org/works",
+        {"query.bibliographic": "matched paper", "rows": 1},
+    )
+    assert calls[1][0] == "https://api.crossref.org/works/10.1000/matched"
+    assert result["matched"]["doi"] == "10.1000/matched"
+    assert result["count"] == 1
+
+
+def test_references_for_paper_falls_back_to_title_when_doi_missing(monkeypatch):
+    paper = SimpleNamespace(id=7, title="Untitled Work", doi=None)
+
+    class PaperService:
+        def get_paper_by_id(self, paper_id):
+            assert paper_id == 7
+            return paper
+
+    service = ReferenceService(PaperService(), NullLogger())
+    monkeypatch.setattr(
+        service,
+        "references_for_title",
+        lambda title, source=None: {
+            "source": source,
+            "matched": {"doi": "10.1000/title"},
+            "references": [],
+            "count": 0,
+            "warning": None,
+        },
+    )
+
+    result = service.references_for_paper(7)
+
+    assert result["source"] == {"paper_id": 7, "title": "Untitled Work"}
+    assert result["matched"]["doi"] == "10.1000/title"
+    assert "matched Crossref work by title" in result["warning"]
+
+
+def test_lit_references_command_uses_service(monkeypatch):
+    class ReferencesService:
+        def references_for_doi(self, doi):
+            assert doi == "10.1000/source"
+            return {
+                "source": {"doi": doi, "crossref_doi": doi},
+                "matched": None,
+                "references": [{"DOI": "10.1000/ref", "raw": {"DOI": "10.1000/ref"}}],
+                "count": 1,
+                "warning": None,
+            }
+
+    monkeypatch.setattr(
+        references_command,
+        "services",
+        lambda ctx: {"references": ReferencesService()},
+    )
+
+    app = typer.Typer()
+    app.command()(references_command.references)
+    result = CliRunner().invoke(app, ["--doi", "10.1000/source", "--json"])
+
+    assert result.exit_code == 0
+    assert '"ok": true' in result.output
+    assert '"count": 1' in result.output

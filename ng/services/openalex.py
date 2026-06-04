@@ -106,7 +106,11 @@ def _authors(work: dict[str, Any]) -> list[dict[str, Any]]:
                 "institution": institution.get("display_name"),
                 "url": institution.get("ror"),
             }
-        authors.append({"full_name": name, "affiliation": affiliation})
+        authors.append({
+            "full_name": name,
+            "affiliation": affiliation,
+            "openalex_id": author.get("id"),
+        })
     return authors
 
 

@@ -7,9 +7,11 @@
 - **多来源导入**：统一 `lit add <identifier>` 自动识别 arXiv、DOI、OpenReview、DBLP、标题、本地 PDF、BibTeX、RIS；旧子命令保留
 - **智能元数据提取**：结构化 API 直接解析；PDF 和非标准来源通过 LLM 提取
 - **检索与过滤**：全文搜索、模糊搜索、多字段组合过滤
+- **引用检索**：基于 Crossref 拉取单篇论文参考文献，支持 DOI 和标题匹配
 - **Collection 管理**：自定义分组，批量操作
-- **作者与机构管理**：独立 Author/Affiliation CRUD，支持个人主页、ORCID、学校/院系两层机构
+- **作者与机构管理**：独立 Author/Affiliation CRUD，支持个人主页、ORCID、OpenAlex、Semantic Scholar、DBLP PID、学校/院系两层机构
 - **多格式导出**：BibTeX、IEEE、Markdown、HTML、JSON
+- **平台标识符**：为论文与作者存储结构化平台 ID，默认输出平台 URL，可通过 `--key` 查看原始 ID/key
 - **PDF 管理**：arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载，本地存储
 
 ## 快速开始
@@ -33,6 +35,9 @@ lit add 1706.03762
 
 # 搜索
 lit search "attention mechanism" --json
+
+# 拉取一篇论文的参考文献列表
+lit references 42 --json
 
 # 补充作者机构信息
 lit author add "Geoffrey Hinton" --institution "University of Toronto" --json

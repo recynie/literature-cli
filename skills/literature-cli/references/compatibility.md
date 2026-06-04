@@ -11,7 +11,7 @@ The following explicit source subcommands are retained for backward compatibilit
 | Source | Compatible command |
 |--------|--------------------|
 | arXiv | `lit add arxiv <id-or-url> --json` |
-| DBLP | `lit add dblp <url> --json` |
+| DBLP | `lit add dblp <url-or-key> --json` |
 | OpenReview | `lit add openreview <id-or-url> --json` |
 | DOI | `lit add doi <doi-or-url> --json` |
 | Local PDF | `lit add pdf <path> --json` |

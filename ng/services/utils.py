@@ -3,6 +3,7 @@
 import re
 
 from ng.services.formatting import format_title_by_words
+from ng.services.platform_ids import clean_arxiv_id, parse_dblp_key, parse_openreview_id
 from titlecase import titlecase
 
 
@@ -308,5 +309,16 @@ def normalize_paper_data(paper_data: dict) -> dict:
 
     if normalized_data.get("authors"):
         normalized_data["authors"] = normalize_author_names(normalized_data["authors"])
+
+    if normalized_data.get("arxiv_id"):
+        normalized_data["arxiv_id"] = clean_arxiv_id(str(normalized_data["arxiv_id"]))
+
+    if normalized_data.get("openreview_id"):
+        parsed = parse_openreview_id(str(normalized_data["openreview_id"]))
+        normalized_data["openreview_id"] = parsed or str(normalized_data["openreview_id"]).strip()
+
+    if normalized_data.get("dblp_key"):
+        parsed = parse_dblp_key(str(normalized_data["dblp_key"]))
+        normalized_data["dblp_key"] = parsed or str(normalized_data["dblp_key"]).strip()
 
     return normalized_data

@@ -18,6 +18,7 @@ from ng.services import (
     MetadataExtractor,
     PaperService,
     PDFManager,
+    ReferenceService,
     SearchService,
     SystemService,
 )
@@ -57,6 +58,7 @@ def services(ctx: typer.Context) -> dict[str, Any]:
         "fetch": FetchMetadataService(
             paper_service, metadata_extractor, app
         ),
+        "references": ReferenceService(paper_service, app),
         "add": AddPaperService(
             paper_service, metadata_extractor, system_service, app
         ),

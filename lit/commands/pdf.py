@@ -123,7 +123,8 @@ def download(ctx: typer.Context, paper_id: int, json: bool = JSON_OPTION):
             "authors": [a.full_name for a in paper.get_ordered_authors()],
             "year": paper.year,
             "doi": paper.doi,
-            "preprint_id": paper.preprint_id,
+            "arxiv_id": getattr(paper, "arxiv_id", None),
+            "openreview_id": getattr(paper, "openreview_id", None),
             "url": paper.url,
         }
         pdf_path, pdf_error, duration = svc["system"].download_pdf(

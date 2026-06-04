@@ -45,12 +45,14 @@ uv pip install -e ".[dev]"
 | `ng/db/database.py` | SQLite 连接管理，`get_db_session()` context manager |
 | `ng/alembic/` | Alembic schema 迁移脚本，含作者/机构 schema 变更 |
 | `ng/services/arxiv_utils.py` | arXiv 标识符集中处理：ID 清洗、从 Paper 提取 ID、判断是否 arXiv 论文、构建 PDF URL |
+| `ng/services/platform_ids.py` | 平台标识符工具：规范化/解析 arXiv、OpenReview、DBLP、OpenAlex、Semantic Scholar、ORCID，并派生平台 URL |
 | `ng/services/metadata.py` | 元数据提取：arXiv API、DBLP、OpenReview、DOI/Crossref、PDF（LLM）、BibTeX、RIS |
 | `ng/services/identifier.py` | 统一导入入口 identifier 识别：文件、arXiv、DOI、OpenReview、DBLP、标题 |
 | `ng/services/openalex.py` | OpenAlex API 封装：按 DOI/标题检索 metadata、提取开放 PDF URL |
 | `ng/services/semantic_scholar.py` | Semantic Scholar API 封装：按 DOI/标题检索 metadata、提取开放 PDF URL |
 | `ng/services/unpaywall.py` | Unpaywall API 封装：按 DOI 获取开放 PDF URL |
 | `ng/services/fetch.py` | `lit edit --fetch` 补全逻辑：按 arXiv/DOI/标题拉取远端 metadata，只填空字段或 overwrite |
+| `ng/services/references.py` | Crossref 参考文献检索：按本地论文、DOI 或标题匹配 DOI 拉取 reference 列表 |
 | `ng/services/add_paper.py` | 各来源论文导入逻辑，含统一 `add_by_identifier()` dispatch |
 | `ng/services/paper.py` | 论文 CRUD，导入/更新作者时复用 Author 并可关联 Affiliation |
 | `ng/services/author.py` | 作者 CRUD、筛选、合并、查询作者论文 |
@@ -80,16 +82,17 @@ uv pip install -e ".[dev]"
 | `lit/config.py` | TOML 配置加载，分 `config.toml`（通用）和 `auth.toml`（敏感），支持用户级（`~/.config/litcli/`）与项目级（`.litcli/`） |
 | `lit/main.py` | typer app 入口，加载用户级与项目级配置、初始化数据库、注册所有子命令 |
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
-| `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化 |
+| `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化；默认平台 URL 输出，`--key` 可切换原始 ID/key |
 | `lit/commands/__init__.py` | 子命令共享 helper：service 初始化、ID 解析、错误输出 |
 | `lit/commands/add.py` | `lit add` 来源导入：统一 identifier 入口和 arXiv、DBLP、OpenReview、DOI、PDF、BibTeX、RIS、manual 子命令 |
-| `lit/commands/search.py` | `lit search` 和 `lit filter`，支持 `--affiliation` |
-| `lit/commands/list.py` | `lit list` |
-| `lit/commands/show.py` | `lit show` |
-| `lit/commands/edit.py` | `lit edit`，支持字段更新、`--fetch` 补全、PDF 元数据提取、PDF 摘要写入 notes |
+| `lit/commands/search.py` | `lit search` 和 `lit filter`，支持 `--affiliation` 与 `--key` |
+| `lit/commands/list.py` | `lit list`，支持 `--key` |
+| `lit/commands/show.py` | `lit show`，支持 `--key` |
+| `lit/commands/references.py` | `lit references`，支持按本地论文 ID、DOI 或标题检索 Crossref 参考文献 |
+| `lit/commands/edit.py` | `lit edit`，支持字段更新、平台标识符更新、`--fetch` 补全、PDF 元数据提取、PDF 摘要写入 notes |
 | `lit/commands/delete.py` | `lit delete`，支持单个 ID、批量 `--ids` 和 `--force` |
 | `lit/commands/export.py` | `lit export`，支持 BibTeX、IEEE、Markdown、HTML、JSON |
-| `lit/commands/author.py` | `lit author` 作者管理：list/search/show/add/edit/delete/merge |
+| `lit/commands/author.py` | `lit author` 作者管理：list/search/show/add/edit/delete/merge，支持作者平台 ID 字段与 `--key` |
 | `lit/commands/affiliation.py` | `lit affiliation` 机构管理：list/show/add/edit/delete |
 | `lit/commands/collect.py` | `lit collect` collection 管理 |
 | `lit/commands/pdf.py` | `lit pdf` 路径、打开、重新下载 |

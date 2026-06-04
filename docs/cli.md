@@ -46,7 +46,11 @@ lit --help
     "abstract": "...",
     "notes": "...",
     "doi": null,
-    "preprint_id": "arXiv 1706.03762",
+    "arxiv_url": "https://arxiv.org/abs/1706.03762",
+    "openreview_url": null,
+    "dblp_url": null,
+    "openalex_url": null,
+    "semantic_scholar_url": null,
     "category": "cs.CL",
     "url": "https://arxiv.org/abs/1706.03762",
     "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
@@ -63,6 +67,38 @@ lit --help
   "ok": true,
   "papers": [ ...paper objects... ],
   "count": 3
+}
+```
+
+### 成功（Crossref 参考文献）
+```json
+{
+  "ok": true,
+  "source": {
+    "paper_id": 42,
+    "title": "Source Paper",
+    "doi": "10.1000/source",
+    "crossref_doi": "10.1000/source",
+    "crossref_title": "Source Paper"
+  },
+  "matched": null,
+  "references": [
+    {
+      "DOI": "10.1000/ref",
+      "author": "Lovelace, Ada",
+      "article-title": "Reference Paper",
+      "journal-title": "Journal of Tests",
+      "year": "1843",
+      "volume": null,
+      "issue": null,
+      "first-page": "1",
+      "unstructured": null,
+      "key": "ref1",
+      "raw": { "...": "original Crossref reference item" }
+    }
+  ],
+  "count": 1,
+  "warning": null
 }
 ```
 
@@ -129,11 +165,34 @@ lit add manual --title "Paper Title" [--json]
 
 ---
 
+### 平台标识符输出与 `--key`
+
+默认情况下，CLI 的 human-readable 与 JSON 输出会优先展示平台 URL，而不是底层存储的原始 ID/key：
+
+- paper: `arxiv_url` / `openreview_url` / `dblp_url` / `openalex_url` / `semantic_scholar_url`
+- author: `orcid_url` / `openalex_url` / `semantic_scholar_url` / `dblp_url`
+
+这类字段仅影响展示，不影响数据库存储。底层仍存原始规范化标识符，例如 `arxiv_id`、`openreview_id`、`dblp_key`、`dblp_pid`。
+
+相关查询命令支持 `--key` 切换到原始标识符模式：
+
+```bash
+lit show 42 --key --json
+lit list --key --json
+lit search "transformer" --key --json
+lit filter --author "Vaswani" --key --json
+lit author list --key --json
+lit author search "Hinton" --key --json
+lit author show 7 --key --json
+```
+
+---
+
 ### `lit search` — 搜索
 
 ```bash
 # 全字段搜索
-lit search "attention mechanism" [--json]
+lit search "attention mechanism" [--key] [--json]
 
 # 指定字段（title、abstract、venue、authors、notes）
 lit search "transformer" --fields title,abstract [--json]
@@ -147,7 +206,7 @@ lit search "atention" --fuzzy [--threshold 60] [--json]
 ### `lit filter` — 过滤
 
 ```bash
-lit filter --author "Vaswani" [--json]
+lit filter --author "Vaswani" [--key] [--json]
 lit filter --year 2017 [--json]
 lit filter --year-range 2020-2023 [--json]
 lit filter --venue "NeurIPS" [--json]
@@ -165,7 +224,7 @@ lit filter --author "LeCun" --year 2020 --type journal [--json]
 ### `lit list` — 列出所有论文
 
 ```bash
-lit list [--json]
+lit list [--key] [--json]
 lit list --limit 20 [--json]
 lit list --sort year|title|added_date [--json]
 ```
@@ -177,10 +236,28 @@ lit list --sort year|title|added_date [--json]
 ### `lit show` — 论文详情
 
 ```bash
-lit show 42 [--json]
+lit show 42 [--key] [--json]
 ```
 
 **返回**：完整 paper 对象，含 abstract、notes、collections。
+
+---
+
+### `lit references` — Crossref 参考文献检索
+
+```bash
+# 给定本地论文，优先用 DOI；没有 DOI 时用标题匹配 Crossref DOI
+lit references 42 [--json]
+
+# 直接按 DOI 拉取 Crossref reference 列表
+lit references --doi 10.1000/source [--json]
+lit references --doi https://doi.org/10.1000/source [--json]
+
+# 按标题 query.bibliographic 匹配 DOI，再拉取 reference 列表
+lit references --title "Source Paper" [--json]
+```
+
+**返回**：`references` 数组，每项保留 Crossref 常见字段 `DOI`、`author`、`article-title`、`journal-title`、`year`、`volume`、`issue`、`first-page`、`unstructured`、`key`，并在 `raw` 中保留原始引用项。Crossref 引用字段常不完整，缺失字段返回 `null`，不视为错误。若本地论文无 DOI，会通过标题匹配 DOI，并在 `warning` 中说明降级策略。
 
 ---
 
@@ -195,6 +272,11 @@ lit edit 42 --venue-full "International Conference on Machine Learning"
 lit edit 42 --venue-acronym "ICML"
 lit edit 42 --paper-type conference
 lit edit 42 --doi "10.1145/..."
+lit edit 42 --arxiv-id "1706.03762"
+lit edit 42 --openreview-id "abc123XYZ"
+lit edit 42 --dblp-key "conf/nips/VaswaniSPUJGKP17"
+lit edit 42 --openalex-id "https://openalex.org/W2741809807"
+lit edit 42 --semantic-scholar-id "012345..."
 lit edit 42 --url "https://..."
 lit edit 42 --pdf-path "/path/to/paper.pdf"
 
@@ -249,14 +331,14 @@ lit export --format json --json
 ### `lit author` — 作者管理
 
 ```bash
-lit author list [--json]
+lit author list [--key] [--json]
 lit author list --institution "MIT" [--json]
 lit author list --department "CSAIL" [--json]
 lit author list --has-email --has-url [--json]
 lit author list --no-affiliation [--json]
 
-lit author search "Hinton" [--json]
-lit author show 7 [--json]
+lit author search "Hinton" [--key] [--json]
+lit author show 7 [--key] [--json]
 
 lit author add "Geoffrey Hinton" \
   --first-name Geoffrey \
@@ -265,6 +347,9 @@ lit author add "Geoffrey Hinton" \
   --personal-url "https://www.cs.toronto.edu/~hinton/" \
   --scholar-url "https://scholar.google.com/citations?user=JicYPdAAAAAJ" \
   --orcid "0000-0001-2345-6789" \
+  --openalex-id "https://openalex.org/A123" \
+  --semantic-scholar-id "456" \
+  --dblp-pid "12/3456" \
   --institution "University of Toronto" \
   --department "Department of Computer Science" \
   [--json]
@@ -288,7 +373,10 @@ Author JSON schema：
   "email": "hinton@cs.toronto.edu",
   "personal_url": "https://www.cs.toronto.edu/~hinton/",
   "scholar_url": "https://scholar.google.com/citations?user=JicYPdAAAAAJ",
-  "orcid": "0000-0001-2345-6789",
+  "orcid_url": "https://orcid.org/0000-0001-2345-6789",
+  "openalex_url": "https://openalex.org/A123",
+  "semantic_scholar_url": "https://www.semanticscholar.org/author/456",
+  "dblp_url": "https://dblp.org/pid/12/3456.html",
   "affiliation": {
     "id": 3,
     "institution": "University of Toronto",
@@ -434,4 +522,4 @@ class CliLogger:
 - `--json`：`json.dumps` 输出，`default=str` 处理日期等非标准类型
 - human-readable：`rich` 表格（列表）或 `Panel`（详情）
 
-`paper_to_dict()` 将 ORM 对象转为公开 JSON schema，`pdf_path` 自动解析为绝对路径。`author_to_dict()` / `affiliation_to_dict()` 分别序列化作者与机构对象。
+`paper_to_dict()` 将 ORM 对象转为公开 JSON schema，`pdf_path` 自动解析为绝对路径。默认输出平台 URL；传入 `use_keys=True` 时输出原始平台 ID/key。`author_to_dict()` / `affiliation_to_dict()` 分别序列化作者与机构对象。

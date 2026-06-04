@@ -76,6 +76,9 @@ class Author(Base):
     faculty_url: Mapped[Optional[str]] = mapped_column(String(500))
     scholar_url: Mapped[Optional[str]] = mapped_column(String(500))
     orcid: Mapped[Optional[str]] = mapped_column(String(50))
+    openalex_id: Mapped[Optional[str]] = mapped_column(String(255))
+    semantic_scholar_id: Mapped[Optional[str]] = mapped_column(String(255))
+    dblp_pid: Mapped[Optional[str]] = mapped_column(String(100))
 
     # Relationships
     affiliation: Mapped[Optional[Affiliation]] = relationship(
@@ -145,9 +148,11 @@ class Paper(Base):
 
     # External identifiers
     doi: Mapped[Optional[str]] = mapped_column(String(255))
-    preprint_id: Mapped[Optional[str]] = mapped_column(
-        String(100)
-    )  # e.g., "arXiv 2505.15134"
+    arxiv_id: Mapped[Optional[str]] = mapped_column(String(100))
+    openreview_id: Mapped[Optional[str]] = mapped_column(String(255))
+    dblp_key: Mapped[Optional[str]] = mapped_column(String(255))
+    openalex_id: Mapped[Optional[str]] = mapped_column(String(255))
+    semantic_scholar_id: Mapped[Optional[str]] = mapped_column(String(255))
     category: Mapped[Optional[str]] = mapped_column(String(50))  # e.g., "cs.LG"
     url: Mapped[Optional[str]] = mapped_column(String(500))  # General URL field
 

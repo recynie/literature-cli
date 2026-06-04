@@ -59,7 +59,11 @@ class AddPaperService:
             "doi": metadata.get("doi"),
             "url": metadata.get("url"),
             "category": metadata.get("category"),
-            "preprint_id": metadata.get("preprint_id"),
+            "arxiv_id": metadata.get("arxiv_id"),
+            "openreview_id": metadata.get("openreview_id"),
+            "dblp_key": metadata.get("dblp_key"),
+            "openalex_id": metadata.get("openalex_id"),
+            "semantic_scholar_id": metadata.get("semantic_scholar_id"),
             "volume": metadata.get("volume"),
             "issue": metadata.get("issue"),
             "pages": metadata.get("pages"),
@@ -118,7 +122,7 @@ class AddPaperService:
             "venue_full": metadata.get("venue_full", ""),
             "venue_acronym": metadata.get("venue_acronym", ""),
             "paper_type": metadata.get("paper_type", "preprint"),
-            "preprint_id": metadata.get("preprint_id"),
+            "arxiv_id": metadata.get("arxiv_id"),
             "category": metadata.get("category"),
             "doi": metadata.get("doi"),
             "url": arxiv_pdf_url(arxiv_id),
@@ -255,6 +259,7 @@ class AddPaperService:
             "paper_type": metadata.get("paper_type", "conference"),
             "doi": metadata.get("doi"),
             "url": dblp_url,
+            "dblp_key": metadata.get("dblp_key"),
         }
 
         paper_data = normalize_paper_data(paper_data)

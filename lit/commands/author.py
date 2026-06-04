@@ -19,6 +19,7 @@ def list_authors(
     has_email: bool = typer.Option(False, "--has-email"),
     has_url: bool = typer.Option(False, "--has-url"),
     no_affiliation: bool = typer.Option(False, "--no-affiliation"),
+    key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
     json: bool = JSON_OPTION,
 ):
     flag = as_json(ctx, json)
@@ -36,7 +37,7 @@ def list_authors(
             filters["no_affiliation"] = True
         authors = services(ctx)["author"].get_all_authors(filters)
         output.print_result(
-            {"ok": True, "authors": [output.author_to_dict(a) for a in authors], "count": len(authors)},
+            {"ok": True, "authors": [output.author_to_dict(a, use_keys=key) for a in authors], "count": len(authors)},
             flag,
         )
     except Exception as exc:
@@ -44,12 +45,17 @@ def list_authors(
 
 
 @app.command()
-def search(ctx: typer.Context, query: str, json: bool = JSON_OPTION):
+def search(
+    ctx: typer.Context,
+    query: str,
+    key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
+    json: bool = JSON_OPTION,
+):
     flag = as_json(ctx, json)
     try:
         authors = services(ctx)["author"].search_authors(query)
         output.print_result(
-            {"ok": True, "authors": [output.author_to_dict(a) for a in authors], "count": len(authors)},
+            {"ok": True, "authors": [output.author_to_dict(a, use_keys=key) for a in authors], "count": len(authors)},
             flag,
         )
     except Exception as exc:
@@ -57,7 +63,12 @@ def search(ctx: typer.Context, query: str, json: bool = JSON_OPTION):
 
 
 @app.command()
-def show(ctx: typer.Context, author_id: int, json: bool = JSON_OPTION):
+def show(
+    ctx: typer.Context,
+    author_id: int,
+    key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
+    json: bool = JSON_OPTION,
+):
     flag = as_json(ctx, json)
     try:
         svc = services(ctx)
@@ -68,8 +79,8 @@ def show(ctx: typer.Context, author_id: int, json: bool = JSON_OPTION):
         output.print_result(
             {
                 "ok": True,
-                "author": output.author_to_dict(author),
-                "papers": [output.paper_to_dict(p) for p in papers],
+                "author": output.author_to_dict(author, use_keys=key),
+                "papers": [output.paper_to_dict(p, use_keys=key) for p in papers],
                 "count": len(papers),
             },
             flag,
@@ -89,13 +100,16 @@ def add(
     faculty_url: str | None = typer.Option(None, "--faculty-url"),
     scholar_url: str | None = typer.Option(None, "--scholar-url"),
     orcid: str | None = typer.Option(None, "--orcid"),
+    openalex_id: str | None = typer.Option(None, "--openalex-id"),
+    semantic_scholar_id: str | None = typer.Option(None, "--semantic-scholar-id"),
+    dblp_pid: str | None = typer.Option(None, "--dblp-pid"),
     institution: str | None = typer.Option(None, "--institution"),
     department: str | None = typer.Option(None, "--department"),
     json: bool = JSON_OPTION,
 ):
     flag = as_json(ctx, json)
     try:
-        data = _author_data(full_name, first_name, last_name, email, personal_url, faculty_url, scholar_url, orcid, institution, department)
+        data = _author_data(full_name, first_name, last_name, email, personal_url, faculty_url, scholar_url, orcid, openalex_id, semantic_scholar_id, dblp_pid, institution, department)
         author = services(ctx)["author"].add_author(data)
         output.print_result({"ok": True, "author": output.author_to_dict(author)}, flag)
     except Exception as exc:
@@ -114,6 +128,9 @@ def edit(
     faculty_url: str | None = typer.Option(None, "--faculty-url"),
     scholar_url: str | None = typer.Option(None, "--scholar-url"),
     orcid: str | None = typer.Option(None, "--orcid"),
+    openalex_id: str | None = typer.Option(None, "--openalex-id"),
+    semantic_scholar_id: str | None = typer.Option(None, "--semantic-scholar-id"),
+    dblp_pid: str | None = typer.Option(None, "--dblp-pid"),
     institution: str | None = typer.Option(None, "--institution"),
     department: str | None = typer.Option(None, "--department"),
     json: bool = JSON_OPTION,
@@ -129,6 +146,9 @@ def edit(
             "faculty_url": faculty_url,
             "scholar_url": scholar_url,
             "orcid": orcid,
+            "openalex_id": openalex_id,
+            "semantic_scholar_id": semantic_scholar_id,
+            "dblp_pid": dblp_pid,
             "institution": institution,
             "department": department,
         }.items() if v is not None}
@@ -172,7 +192,7 @@ def merge(
         handle_exception(exc, flag)
 
 
-def _author_data(full_name, first_name, last_name, email, personal_url, faculty_url, scholar_url, orcid, institution, department):
+def _author_data(full_name, first_name, last_name, email, personal_url, faculty_url, scholar_url, orcid, openalex_id, semantic_scholar_id, dblp_pid, institution, department):
     return {
         "full_name": full_name,
         "first_name": first_name,
@@ -182,6 +202,9 @@ def _author_data(full_name, first_name, last_name, email, personal_url, faculty_
         "faculty_url": faculty_url,
         "scholar_url": scholar_url,
         "orcid": orcid,
+        "openalex_id": openalex_id,
+        "semantic_scholar_id": semantic_scholar_id,
+        "dblp_pid": dblp_pid,
         "institution": institution,
         "department": department,
     }

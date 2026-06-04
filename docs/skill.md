@@ -20,10 +20,10 @@ Skill 定义位于 `skills/literature-cli/SKILL.md`，已完整实现。
 | 手动创建条目 | `lit add manual --title "..." --json` |
 | 搜索论文 | `lit search "<query>" --json` |
 | 模糊搜索 | `lit search "<query>" --fuzzy --threshold 60 --json` |
-| 按字段过滤 | `lit filter --author/--year/--year-range/--venue/--type/--collection/--query --json` |
-| 列出所有论文 | `lit list --json` |
-| 查看论文详情 | `lit show <id> --json` |
-| 编辑元数据 | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--url/--notes/--year <value> --json` |
+| 按字段过滤 | `lit filter --author/--year/--year-range/--venue/--type/--collection/--query [--key] --json` |
+| 列出所有论文 | `lit list [--key] --json` |
+| 查看论文详情 | `lit show <id> [--key] --json` |
+| 编辑元数据 | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--arxiv-id/--openreview-id/--dblp-key/--openalex-id/--semantic-scholar-id/--url/--notes/--year <value> --json` |
 | 补全缺失元数据 | `lit edit <id> --fetch --json` |
 | 覆盖刷新元数据 | `lit edit <id> --fetch --overwrite --json` |
 | 重新提取 PDF 元数据 | `lit edit <id> --extract-pdf --json`（需要 OPENAI_API_KEY）|
@@ -135,7 +135,11 @@ lit add ./exported_refs.bib --json
   "abstract": "The dominant sequence transduction models...",
   "notes": "Key paper for transformer architecture",
   "doi": null,
-  "preprint_id": "arXiv 1706.03762",
+  "arxiv_url": "https://arxiv.org/abs/1706.03762",
+  "openreview_url": null,
+  "dblp_url": null,
+  "openalex_url": null,
+  "semantic_scholar_url": null,
   "category": "cs.CL",
   "url": "https://arxiv.org/abs/1706.03762",
   "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
@@ -166,6 +170,7 @@ lit add ./exported_refs.bib --json
 ## 注意事项
 
 - **始终使用 `--json`** 处理命令输出，human-readable 格式不保证稳定
+- 默认 JSON 输出中的平台字段优先展示 URL；当需要数据库中的原始平台 ID/key 时，使用 `--key`
 - 默认使用 `lit add <identifier-or-path-or-title>` 导入；旧的显式来源子命令仅作为兼容用法保留在 `skills/literature-cli/references/compatibility.md`
 - `lit add <path.pdf>`、`lit edit --extract-pdf`、`lit edit --summarize` 依赖 LLM，需要 `OPENAI_API_KEY`
 - 导入时可通过 arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载 PDF，网络较慢时需等待

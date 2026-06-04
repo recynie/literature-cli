@@ -26,6 +26,8 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Filter papers | `lit filter --author/--year/--year-range/--venue/--type/--collection/--affiliation/--query --json` |
 | List papers | `lit list --json` |
 | Show details | `lit show <id> --json` |
+| Fetch references | `lit references <id> --json` |
+| Fetch references by DOI/title | `lit references --doi <doi> --json` or `lit references --title "<title>" --json` |
 | Edit metadata | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--url/--notes/--year <value> --json` |
 | Fetch missing metadata | `lit edit <id> --fetch --json` |
 | Refresh metadata with overwrite | `lit edit <id> --fetch --overwrite --json` |
@@ -133,7 +135,11 @@ lit export --format markdown --collection "to-read" --json
 lit show 42 --json
 # Verify: abstract, authors, metadata visible
 
-# 2. Get or open PDF
+# 2. Fetch Crossref references
+lit references 42 --json
+# Verify: references[] contains sparse Crossref reference items; missing fields are null
+
+# 3. Get or open PDF
 lit pdf path 42 --json
 lit pdf open 42
 # Verify: path is valid file, open launches viewer

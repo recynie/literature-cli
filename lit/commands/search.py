@@ -20,6 +20,7 @@ def search(
     fields: str | None = typer.Option(None, "--fields", help="Comma-separated fields."),
     fuzzy: bool = typer.Option(False, "--fuzzy", help="Use fuzzy matching."),
     threshold: int = typer.Option(60, "--threshold", min=0, max=100),
+    key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
     json: bool = JSON_OPTION,
 ):
     flag = as_json(ctx, json)
@@ -33,7 +34,7 @@ def search(
         output.print_result(
             {
                 "ok": True,
-                "papers": [output.paper_to_dict(paper) for paper in papers],
+                "papers": [output.paper_to_dict(paper, use_keys=key) for paper in papers],
                 "count": len(papers),
             },
             flag,
@@ -52,6 +53,7 @@ def filter(
     collection: str | None = typer.Option(None, "--collection"),
     affiliation: str | None = typer.Option(None, "--affiliation"),
     query: str | None = typer.Option(None, "--query"),
+    key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
     json: bool = JSON_OPTION,
 ):
     flag = as_json(ctx, json)
@@ -79,7 +81,7 @@ def filter(
         output.print_result(
             {
                 "ok": True,
-                "papers": [output.paper_to_dict(paper) for paper in papers],
+                "papers": [output.paper_to_dict(paper, use_keys=key) for paper in papers],
                 "count": len(papers),
             },
             flag,

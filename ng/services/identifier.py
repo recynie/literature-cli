@@ -6,9 +6,10 @@ import os
 import re
 from dataclasses import dataclass
 from enum import StrEnum
-from urllib.parse import unquote, urlparse, parse_qs
+from urllib.parse import unquote, urlparse
 
 from ng.services.arxiv_utils import clean_arxiv_id, extract_arxiv_id_from_url
+from ng.services.platform_ids import parse_dblp_key, parse_openreview_id
 
 
 class IdentifierType(StrEnum):
@@ -68,12 +69,13 @@ def detect(raw_input: str) -> DetectedIdentifier:
         return DetectedIdentifier(IdentifierType.DOI, doi, raw)
 
     if "openreview.net" in host:
-        openreview_id = _extract_openreview_id(raw)
+        openreview_id = parse_openreview_id(raw)
         if openreview_id:
             return DetectedIdentifier(IdentifierType.OPENREVIEW, openreview_id, raw)
 
     if "dblp.org" in host:
-        return DetectedIdentifier(IdentifierType.DBLP, raw, raw)
+        dblp_key = parse_dblp_key(raw)
+        return DetectedIdentifier(IdentifierType.DBLP, dblp_key or raw, raw)
 
     return DetectedIdentifier(IdentifierType.TITLE, raw, raw)
 
@@ -85,13 +87,3 @@ def _extract_doi(value: str) -> str | None:
         return None
     return match.group(0).rstrip(".,;)")
 
-
-def _extract_openreview_id(value: str) -> str | None:
-    parsed = urlparse(value)
-    query = parse_qs(parsed.query)
-    if query.get("id"):
-        return query["id"][0].strip()
-    path_parts = [part for part in parsed.path.split("/") if part]
-    if path_parts:
-        return path_parts[-1].strip()
-    return None

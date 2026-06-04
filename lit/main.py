@@ -12,7 +12,21 @@ import typer
 
 from lit.config import load_config_files
 from lit.logger import CliLogger
-from lit.commands import add, affiliation, author, collect, db, delete, edit, export, list, pdf, search, show
+from lit.commands import (
+    add,
+    affiliation,
+    author,
+    collect,
+    db,
+    delete,
+    edit,
+    export,
+    list,
+    pdf,
+    references,
+    search,
+    show,
+)
 from ng.db.database import init_database
 
 
@@ -56,6 +70,7 @@ app.command("search")(search.search)
 app.command("filter")(search.filter)
 app.command("list")(list.list_papers)
 app.command("show")(show.show)
+app.command("references")(references.references)
 app.command("edit")(edit.edit)
 app.command("delete")(delete.delete)
 app.command("export")(export.export)

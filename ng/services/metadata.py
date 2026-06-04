@@ -23,6 +23,7 @@ from ng.services import (
     prompts,
     sanitize_for_logging,
 )
+from ng.services.platform_ids import parse_dblp_key
 from ng.services.logger import Logger, NullLogger
 from openai import OpenAI
 
@@ -118,7 +119,7 @@ class MetadataExtractor:
                     " and ".join(authors) if authors else ""
                 ),  # Convert to string format for consistency
                 "year": year,
-                "preprint_id": f"arXiv {arxiv_id}",  # Store as "arXiv 2505.15134"
+                "arxiv_id": arxiv_id,
                 "category": category,
                 "doi": doi,
                 "paper_type": "preprint",
@@ -166,6 +167,7 @@ class MetadataExtractor:
                     metadata["venue_full"] = venue_info.get("venue_full", venue_field)
                     metadata["venue_acronym"] = venue_info.get("venue_acronym", "")
 
+                metadata["dblp_key"] = parse_dblp_key(dblp_url)
                 # Ensure we have the DBLP URL
                 if not metadata.get("url"):
                     metadata["url"] = dblp_url
@@ -402,6 +404,7 @@ class MetadataExtractor:
             "venue_full": venue_data.get("venue_full", venue_info),
             "venue_acronym": venue_data.get("venue_acronym", ""),
             "paper_type": "conference",
+            "openreview_id": openreview_id,
             "url": f"https://openreview.net/forum?id={openreview_id}",
             "category": None,
             "pdf_path": None,
@@ -507,6 +510,7 @@ class MetadataExtractor:
             "venue_full": venue_data.get("venue_full", venue_info),
             "venue_acronym": venue_data.get("venue_acronym", ""),
             "paper_type": "conference",
+            "openreview_id": openreview_id,
             "url": f"https://openreview.net/forum?id={openreview_id}",
             "category": None,
             "pdf_path": None,
@@ -839,7 +843,7 @@ class MetadataExtractor:
                     "url": entry.get("url", ""),
                     "category": "",
                     "pdf_path": None,
-                    "preprint_id": entry.get("eprint", ""),
+                    "arxiv_id": entry.get("eprint", ""),
                     "volume": entry.get("volume", ""),
                     "issue": entry.get("number", ""),
                     "pages": entry.get("pages", ""),
@@ -879,7 +883,7 @@ class MetadataExtractor:
                     "url": entry.get("url", ""),
                     "category": "",
                     "pdf_path": None,
-                    "preprint_id": "",
+                    "arxiv_id": "",
                     "volume": entry.get("volume", ""),
                     "issue": entry.get("number", ""),
                     "pages": entry.get("start_page", "")

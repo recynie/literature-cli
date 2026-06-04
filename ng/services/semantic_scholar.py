@@ -92,7 +92,10 @@ def _paper_to_metadata(paper: dict[str, Any]) -> dict[str, Any] | None:
         "title": paper.get("title") or "Unknown Title",
         "abstract": paper.get("abstract") or "",
         "authors": [
-            {"full_name": author.get("name")}
+            {
+                "full_name": author.get("name"),
+                "semantic_scholar_id": author.get("authorId"),
+            }
             for author in paper.get("authors") or []
             if author.get("name")
         ],
@@ -104,7 +107,7 @@ def _paper_to_metadata(paper: dict[str, Any]) -> dict[str, Any] | None:
         "venue_acronym": "",
         "paper_type": _paper_type(paper.get("publicationTypes")),
         "doi": external_ids.get("DOI"),
-        "preprint_id": _preprint_id(external_ids),
+        "arxiv_id": external_ids.get("ArXiv"),
         "url": paper.get("url"),
         "volume": journal.get("volume"),
         "pages": journal.get("pages"),
@@ -124,7 +127,3 @@ def _paper_type(publication_types: list[str] | None) -> str:
         return "review"
     return "unknown"
 
-
-def _preprint_id(external_ids: dict[str, Any]) -> str | None:
-    arxiv_id = external_ids.get("ArXiv")
-    return f"arXiv {arxiv_id}" if arxiv_id else None

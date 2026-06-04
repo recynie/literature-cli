@@ -12,6 +12,7 @@ from ng.services.arxiv_utils import arxiv_pdf_url
 from ng.services import openalex, semantic_scholar, unpaywall
 from ng.services.identifier import IdentifierType, detect
 from ng.services.logger import Logger, NullLogger
+from ng.services.platform_ids import parse_openreview_id
 
 if TYPE_CHECKING:
     from ng.services import PDFManager
@@ -227,7 +228,8 @@ class SystemService:
     ) -> list[tuple[str, str]]:
         candidates: list[tuple[str, str]] = []
         doi = (paper_data.get("doi") or "").strip()
-        preprint_id = (paper_data.get("preprint_id") or "").strip()
+        arxiv_id = (paper_data.get("arxiv_id") or "").strip()
+        openreview_id = (paper_data.get("openreview_id") or "").strip()
         url = (paper_data.get("url") or "").strip()
 
         if not doi and identifier:
@@ -238,12 +240,11 @@ class SystemService:
             except Exception:
                 pass
 
-        if preprint_id.lower().startswith("arxiv"):
-            arxiv_id = preprint_id.split()[-1]
+        if arxiv_id:
             candidates.append(("arXiv", arxiv_pdf_url(arxiv_id)))
 
-        if "openreview.net/forum" in url and "id=" in url:
-            openreview_id = url.split("id=", 1)[1].split("&", 1)[0]
+        openreview_id = openreview_id or (parse_openreview_id(url) if url else None)
+        if openreview_id:
             candidates.append(("OpenReview", f"https://openreview.net/pdf?id={openreview_id}"))
 
         if doi:

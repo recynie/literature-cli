@@ -255,7 +255,7 @@ def export_to_json(papers: List[Paper]) -> str:
             "abstract": paper.abstract,
             "notes": paper.notes,
             "doi": paper.doi,
-            "preprint_id": paper.preprint_id,
+            "arxiv_id": getattr(paper, "arxiv_id", None),
             "category": paper.category,
             "url": paper.url,
             "collections": [collection.name for collection in paper.collections],

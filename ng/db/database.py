@@ -80,6 +80,15 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
         if "orcid" not in author_columns:
             cursor.execute("ALTER TABLE authors ADD COLUMN orcid VARCHAR(50)")
             columns_added.append("authors.orcid")
+        if "openalex_id" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN openalex_id VARCHAR(255)")
+            columns_added.append("authors.openalex_id")
+        if "semantic_scholar_id" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN semantic_scholar_id VARCHAR(255)")
+            columns_added.append("authors.semantic_scholar_id")
+        if "dblp_pid" not in author_columns:
+            cursor.execute("ALTER TABLE authors ADD COLUMN dblp_pid VARCHAR(100)")
+            columns_added.append("authors.dblp_pid")
         if "faculty_url" not in author_columns:
             cursor.execute("ALTER TABLE authors ADD COLUMN faculty_url VARCHAR(500)")
             columns_added.append("authors.faculty_url")
@@ -110,6 +119,24 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
                 "ALTER TABLE papers ADD COLUMN html_snapshot_path VARCHAR(500)"
             )
             columns_added.append("html_snapshot_path")
+
+        if "arxiv_id" not in existing_columns:
+            cursor.execute("ALTER TABLE papers ADD COLUMN arxiv_id VARCHAR(100)")
+            columns_added.append("arxiv_id")
+        if "openreview_id" not in existing_columns:
+            cursor.execute("ALTER TABLE papers ADD COLUMN openreview_id VARCHAR(255)")
+            columns_added.append("openreview_id")
+        if "dblp_key" not in existing_columns:
+            cursor.execute("ALTER TABLE papers ADD COLUMN dblp_key VARCHAR(255)")
+            columns_added.append("dblp_key")
+        if "openalex_id" not in existing_columns:
+            cursor.execute("ALTER TABLE papers ADD COLUMN openalex_id VARCHAR(255)")
+            columns_added.append("openalex_id")
+        if "semantic_scholar_id" not in existing_columns:
+            cursor.execute("ALTER TABLE papers ADD COLUMN semantic_scholar_id VARCHAR(255)")
+            columns_added.append("semantic_scholar_id")
+        if "preprint_id" in existing_columns and "arxiv_id" not in existing_columns:
+            cursor.execute("UPDATE papers SET arxiv_id = preprint_id WHERE arxiv_id IS NULL")
 
         # Add uuid column if missing (migration 10f8534b9062)
         if "uuid" not in existing_columns:

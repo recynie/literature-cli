@@ -33,7 +33,11 @@ Core table. One row per paper.
 | `pages` | VARCHAR(50) | Yes | Page range, e.g. `1234–1245` |
 | `paper_type` | VARCHAR(50) | Yes | One of: `conference`, `journal`, `preprint`, `workshop`, `website` |
 | `doi` | VARCHAR(255) | Yes | DOI string, e.g. `10.1038/s41586-023-06139-9` |
-| `preprint_id` | VARCHAR(100) | Yes | Preprint identifier, e.g. `arXiv 1706.03762` |
+| `arxiv_id` | VARCHAR(100) | Yes | Normalized bare arXiv ID, e.g. `1706.03762` |
+| `openreview_id` | VARCHAR(255) | Yes | OpenReview forum ID |
+| `dblp_key` | VARCHAR(255) | Yes | DBLP record key, e.g. `conf/nips/VaswaniSPUJGKP17` |
+| `openalex_id` | VARCHAR(255) | Yes | Canonical OpenAlex work ID URL |
+| `semantic_scholar_id` | VARCHAR(255) | Yes | Semantic Scholar paper ID |
 | `category` | VARCHAR(50) | Yes | arXiv category, e.g. `cs.LG` |
 | `url` | VARCHAR(500) | Yes | Canonical URL (abstract page, project page, etc.) |
 | `pdf_path` | VARCHAR(500) | Yes | Absolute path to local PDF file |
@@ -58,8 +62,11 @@ One row per unique person. Authors are reused across papers.
 | `affiliation_id` | INTEGER | Yes | FK → `affiliations.id` |
 | `personal_url` | VARCHAR(500) | Yes | Personal homepage (GitHub Pages, blog, etc.) |
 | `faculty_url` | VARCHAR(500) | Yes | Institutional faculty page |
-| `scholar_url` | VARCHAR(500) | Yes | Google Scholar or Semantic Scholar profile |
+| `scholar_url` | VARCHAR(500) | Yes | Google Scholar profile URL |
 | `orcid` | VARCHAR(50) | Yes | ORCID identifier, e.g. `0000-0001-2345-6789` |
+| `openalex_id` | VARCHAR(255) | Yes | Canonical OpenAlex author ID URL |
+| `semantic_scholar_id` | VARCHAR(255) | Yes | Semantic Scholar author ID |
+| `dblp_pid` | VARCHAR(100) | Yes | DBLP person PID, e.g. `12/3456` |
 
 ---
 
