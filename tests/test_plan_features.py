@@ -12,7 +12,7 @@ from ng.services.platform_ids import dblp_url_from_key, openreview_url
 from ng.services.fetch import FetchMetadataService
 from ng.services.identifier import IdentifierType, detect
 from ng.services.logger import NullLogger
-from ng.services.references import ReferenceService
+from ng.services.references import ReferenceError, ReferenceService
 from ng.services.system import SystemService
 
 
@@ -328,7 +328,12 @@ def test_crossref_references_title_lookup_fetches_matched_doi(monkeypatch):
                                 "DOI": "10.1000/matched",
                                 "title": ["Matched Paper"],
                                 "score": 42.0,
-                            }
+                            },
+                            {
+                                "DOI": "10.1000/other",
+                                "title": ["Matched Papers"],
+                                "score": 41.0,
+                            },
                         ]
                     }
                 }
@@ -352,15 +357,23 @@ def test_crossref_references_title_lookup_fetches_matched_doi(monkeypatch):
 
     assert calls[0] == (
         "https://api.crossref.org/works",
-        {"query.bibliographic": "matched paper", "rows": 1},
+        {"query.bibliographic": "matched paper", "rows": 5},
     )
     assert calls[1][0] == "https://api.crossref.org/works/10.1000/matched"
     assert result["matched"]["doi"] == "10.1000/matched"
+    assert result["matched"]["similarity"] >= 85
     assert result["count"] == 1
+    assert result["warning"] is not None
 
 
 def test_references_for_paper_falls_back_to_title_when_doi_missing(monkeypatch):
-    paper = SimpleNamespace(id=7, title="Untitled Work", doi=None)
+    paper = SimpleNamespace(
+        id=7,
+        title="Untitled Work",
+        doi=None,
+        year=2024,
+        get_ordered_authors=lambda: [SimpleNamespace(full_name="Ada Lovelace")],
+    )
 
     class PaperService:
         def get_paper_by_id(self, paper_id):
@@ -371,12 +384,14 @@ def test_references_for_paper_falls_back_to_title_when_doi_missing(monkeypatch):
     monkeypatch.setattr(
         service,
         "references_for_title",
-        lambda title, source=None: {
+        lambda title, source=None, expected_year=None, expected_authors=None: {
             "source": source,
-            "matched": {"doi": "10.1000/title"},
+            "matched": {"doi": "10.1000/title", "similarity": 100},
             "references": [],
             "count": 0,
             "warning": None,
+            "expected_year": expected_year,
+            "expected_authors": expected_authors,
         },
     )
 
@@ -384,7 +399,92 @@ def test_references_for_paper_falls_back_to_title_when_doi_missing(monkeypatch):
 
     assert result["source"] == {"paper_id": 7, "title": "Untitled Work"}
     assert result["matched"]["doi"] == "10.1000/title"
+    assert result["expected_year"] == 2024
+    assert result["expected_authors"] == ["Ada Lovelace"]
     assert "matched Crossref work by title" in result["warning"]
+
+
+def test_references_title_match_rejects_weak_candidate(monkeypatch):
+    def fake_get(url, **kwargs):
+        if kwargs.get("params"):
+            return FakeResponse(
+                {
+                    "message": {
+                        "items": [
+                            {
+                                "DOI": "10.1000/weak",
+                                "title": ["Completely Different Work"],
+                                "score": 99.0,
+                            }
+                        ]
+                    }
+                }
+            )
+        return FakeResponse({"message": {}})
+
+    import ng.services.references as references
+
+    monkeypatch.setattr(references.http_utils, "get", fake_get)
+    service = ReferenceService(None, NullLogger())
+
+    try:
+        service.references_for_title("matched paper")
+        assert False, "expected ReferenceError"
+    except ReferenceError as exc:
+        assert exc.code == "NOT_FOUND"
+        assert "too weak" in str(exc)
+
+
+def test_references_title_match_prefers_year_and_author_hints(monkeypatch):
+    def fake_get(url, **kwargs):
+        if kwargs.get("params"):
+            return FakeResponse(
+                {
+                    "message": {
+                        "items": [
+                            {
+                                "DOI": "10.1000/wrong",
+                                "title": ["Attention Is All You Need"],
+                                "score": 100.0,
+                                "issued": {"date-parts": [[2018]]},
+                                "author": [{"family": "Smith"}],
+                            },
+                            {
+                                "DOI": "10.1000/right",
+                                "title": ["Attention Is All You Need"],
+                                "score": 99.0,
+                                "issued": {"date-parts": [[2017]]},
+                                "author": [{"family": "Vaswani"}],
+                            },
+                        ]
+                    }
+                }
+            )
+        return FakeResponse(
+            {
+                "message": {
+                    "DOI": "10.1000/right",
+                    "title": ["Attention Is All You Need"],
+                    "reference": [{"article-title": "Reference"}],
+                }
+            }
+        )
+
+    import ng.services.references as references
+
+    monkeypatch.setattr(references.http_utils, "get", fake_get)
+    service = ReferenceService(None, NullLogger())
+
+    result = service.references_for_title(
+        "Attention Is All You Need",
+        expected_year=2017,
+        expected_authors=["Ashish Vaswani"],
+    )
+
+    assert result["matched"]["doi"] == "10.1000/right"
+    assert result["matched"]["year"] == 2017
+    assert result["matched"]["composite_score"] > result["matched"]["similarity"]
+    assert "year/author hints" in (result["warning"] or "")
 
 
 def test_lit_references_command_uses_service(monkeypatch):

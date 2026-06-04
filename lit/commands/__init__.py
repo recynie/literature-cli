@@ -112,6 +112,8 @@ def papers_by_ids(paper_service: PaperService, ids: list[int]):
 def handle_exception(exc: Exception, as_json_flag: bool):
     if isinstance(exc, typer.Exit):
         raise exc
+    if hasattr(exc, "code"):
+        output.error(str(exc), getattr(exc, "code"), as_json_flag)
     message = str(exc)
     lower = message.lower()
     if (

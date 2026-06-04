@@ -406,6 +406,16 @@ def _print_reference_table(data: Mapping[str, Any]):
         )
     if data.get("warning"):
         console.print(f"[yellow]{data['warning']}[/yellow]")
+    if data.get("error"):
+        console.print(f"[red]{data['error']}[/red]")
+    if data.get("code"):
+        console.print(f"Code: {data['code']}")
+    if data.get("available_matches"):
+        console.print("[dim]Alternative title matches:[/dim]")
+        for match in data["available_matches"]:
+            console.print(
+                f"[dim]- {match.get('title') or ''} ({match.get('doi') or ''}) similarity={match.get('similarity') if match.get('similarity') is not None else ''}[/dim]"
+            )
 
     table = Table(show_lines=False)
     table.add_column("#", justify="right")
