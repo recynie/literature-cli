@@ -36,6 +36,13 @@ pdf_pages = 10             # Max pages sent to the LLM when extracting PDF metad
 unpaywall_email = "you@example.com"      # Optional, used for Unpaywall requests
 openalex_email = "you@example.com"       # Optional, enables OpenAlex polite pool
 # semantic_scholar_api_key = ""          # Optional, raises S2 rate limits
+
+[mineru]
+# Optional MinerU PDF parsing settings.
+# model: "vlm" (default, best quality) | "pipeline" | "html"
+model = "vlm"
+ocr = true
+language = "en"
 ```
 
 ### Field Notes
@@ -51,6 +58,10 @@ openalex_email = "you@example.com"       # Optional, enables OpenAlex polite poo
 | `services.unpaywall_email` | — | Optional email for Unpaywall PDF fallback |
 | `services.openalex_email` | — | Optional email for OpenAlex polite pool |
 | `services.semantic_scholar_api_key` | — | Optional Semantic Scholar API key for higher rate limits |
+| `mineru.api_key` | — | Optional MinerU API key for PDF parsing |
+| `mineru.model` | `vlm` | MinerU model (`vlm`, `pipeline`, `html`) |
+| `mineru.ocr` | `true` | Whether to enable OCR for MinerU |
+| `mineru.language` | `en` | MinerU language code |
 
 ---
 
@@ -61,6 +72,9 @@ Secrets only.
 ```toml
 [openai]
 api_key = "sk-..."
+
+[mineru]
+api_key = "mk-..."
 ```
 
 The API key can also be supplied via the `OPENAI_API_KEY` environment variable, which takes precedence over the file. Service settings can also be supplied with `UNPAYWALL_EMAIL`, `OPENALEX_EMAIL`, and `SEMANTIC_SCHOLAR_API_KEY`.

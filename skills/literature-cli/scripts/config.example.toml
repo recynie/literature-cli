@@ -16,3 +16,10 @@ pdf_pages = 10
 unpaywall_email = "you@example.com"
 openalex_email = "you@example.com"
 # semantic_scholar_api_key = ""
+
+[mineru]
+# Optional MinerU PDF parsing settings.
+# model: "vlm" (default, best quality) | "pipeline" | "html"
+model = "vlm"
+ocr = true
+language = "en"

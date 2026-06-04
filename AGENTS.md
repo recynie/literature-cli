@@ -60,6 +60,7 @@ uv pip install -e ".[dev]"
 | `ng/services/search.py` | 全文搜索、模糊搜索、多字段过滤（含 affiliation） |
 | `ng/services/collection.py` | Collection 增删改查，批量添加/移除论文 |
 | `ng/services/export.py` | 导出：BibTeX、IEEE、Markdown、HTML、JSON |
+| `ng/services/mineru.py` | MinerU API 封装：`MinerUService.parse_pdf()` 提交本地 PDF、轮询结果、落盘 `.md`/`.json`/额外格式；`mineru_config_from_env()` 读取环境变量构建配置 |
 | `ng/services/pdf.py` | PDF 下载、本地路径管理 |
 | `ng/services/logger.py` | 服务层日志协议 `Logger` 与空实现 `NullLogger` |
 | `ng/services/prompts.py` | LLM prompt 模板（元数据提取、venue 规范化） |
@@ -95,7 +96,7 @@ uv pip install -e ".[dev]"
 | `lit/commands/author.py` | `lit author` 作者管理：list/search/show/add/edit/delete/merge，支持作者平台 ID 字段与 `--key` |
 | `lit/commands/affiliation.py` | `lit affiliation` 机构管理：list/show/add/edit/delete |
 | `lit/commands/collect.py` | `lit collect` collection 管理 |
-| `lit/commands/pdf.py` | `lit pdf` 路径、打开、重新下载 |
+| `lit/commands/pdf.py` | `lit pdf` 路径、打开、下载（含 `--no-parse`）、`lit pdf parse`（MinerU 解析）|
 | `lit/commands/db.py` | `lit db check` / `lit db clean` |
 
 ### `skills/literature-cli/` — pi Skill

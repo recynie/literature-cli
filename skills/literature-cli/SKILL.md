@@ -60,12 +60,13 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Get PDF path | `lit pdf path <id> --json` |
 | Open PDF | `lit pdf open <id>` |
 | Download PDF | `lit pdf download <id> --json` |
+| Parse PDF | `lit pdf parse <id> --json` |
 | Database health check | `lit db check --json` |
 | Clean orphaned files | `lit db clean --json` |
 
 For import, prefer `lit add <identifier>` unless the user explicitly asks for a legacy subcommand. The importer detects local `.pdf` / `.bib` / `.ris` files, arXiv IDs and URLs, DOI strings and URLs, OpenReview URLs, DBLP URLs, and otherwise treats the input as a title search.
 
-PDF download uses a fallback chain when metadata is available: arXiv direct link, OpenReview direct link, Unpaywall, OpenAlex, then Semantic Scholar. PDF downloads only save/link the file. To parse downloaded PDF content, run `lit edit <id> --extract-pdf --json`; to generate notes from the PDF, run `lit edit <id> --summarize --json`.
+PDF download uses a fallback chain when metadata is available: arXiv direct link, OpenReview direct link, Unpaywall, OpenAlex, then Semantic Scholar. PDF downloads save/link the file and, when `MINERU_API_KEY` is configured, also run MinerU parsing by default. Use `lit pdf download <id> --no-parse --json` to skip parsing. To parse an already-downloaded PDF (or to reparse with overrides), use `lit pdf parse <id> --json`.
 
 ## Workflows
 
@@ -139,10 +140,12 @@ lit show 42 --json
 lit references 42 --json
 # Verify: references[] contains sparse Crossref reference items; missing fields are null
 
-# 3. Get or open PDF
+# 3. Get, download, or parse PDF
 lit pdf path 42 --json
 lit pdf open 42
-# Verify: path is valid file, open launches viewer
+lit pdf download 42 --json
+lit pdf parse 42 --force --model pipeline --extra-formats html --json
+# Verify: path is valid file, parse writes markdown/json to data_dir/parsed/
 ```
 
 ### Bulk Import

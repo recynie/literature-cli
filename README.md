@@ -12,7 +12,7 @@
 - **作者与机构管理**：独立 Author/Affiliation CRUD，支持个人主页、ORCID、OpenAlex、Semantic Scholar、DBLP PID、学校/院系两层机构
 - **多格式导出**：BibTeX、IEEE、Markdown、HTML、JSON
 - **平台标识符**：为论文与作者存储结构化平台 ID，默认输出平台 URL，可通过 `--key` 查看原始 ID/key
-- **PDF 管理**：arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载，本地存储
+- **PDF 管理**：arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载；可选 MinerU 自动解析并落盘结构化全文
 
 ## 快速开始
 
@@ -29,6 +29,7 @@ uv tool install .
 # 配置 OpenAI API key（PDF 元数据提取需要）
 mkdir -p ~/.config/litcli
 cp .litcli/auth.example.toml ~/.config/litcli/auth.toml
+# 如需 MinerU 全文解析，再配置 MinerU API key
 
 # 导入一篇论文
 lit add 1706.03762

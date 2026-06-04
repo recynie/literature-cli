@@ -1,5 +1,9 @@
 # auth.toml — secrets
-# Copy this file to auth.toml and fill in your API key.
+# Copy this file to auth.toml and fill in your API keys.
 
 [openai]
 api_key = "your_openai_api_key_here"
+
+[mineru]
+# Get your free token from https://mineru.net/apiManage/token
+api_key = "your_mineru_api_key_here"

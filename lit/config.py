@@ -42,6 +42,10 @@ CONFIG_ENV_MAP = {
     "services.unpaywall_email": "UNPAYWALL_EMAIL",
     "services.openalex_email": "OPENALEX_EMAIL",
     "services.semantic_scholar_api_key": "SEMANTIC_SCHOLAR_API_KEY",
+    "mineru.api_key": "MINERU_API_KEY",
+    "mineru.model": "MINERU_MODEL",
+    "mineru.ocr": "MINERU_OCR",
+    "mineru.language": "MINERU_LANGUAGE",
 }
 
 

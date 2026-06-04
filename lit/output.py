@@ -60,6 +60,7 @@ def paper_to_dict(paper: Paper, use_keys: bool = False) -> dict[str, Any]:
         "category": paper.category,
         "url": paper.url,
         "pdf_path": pdf_path,
+        "parsed_pdf_path": paper.parsed_pdf_path,
         "collections": [collection.name for collection in paper.collections],
         "added_date": _iso(paper.added_date),
         "modified_date": _iso(paper.modified_date),

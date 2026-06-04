@@ -3,3 +3,7 @@
 
 [openai]
 api_key = "sk-..."
+
+[mineru]
+# Get your free token from https://mineru.net/apiManage/token
+api_key = "your_mineru_api_key_here"

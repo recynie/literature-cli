@@ -159,6 +159,7 @@ class Paper(Base):
     # File information
     pdf_path: Mapped[Optional[str]] = mapped_column(String(500))
     html_snapshot_path: Mapped[Optional[str]] = mapped_column(String(500))
+    parsed_pdf_path: Mapped[Optional[str]] = mapped_column(String(500))
 
     # User notes
     notes: Mapped[Optional[str]] = mapped_column(Text)

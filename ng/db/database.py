@@ -120,6 +120,13 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
             )
             columns_added.append("html_snapshot_path")
 
+        # Add parsed_pdf_path column if missing (migration a1b2c3d4e5f6)
+        if "parsed_pdf_path" not in existing_columns:
+            cursor.execute(
+                "ALTER TABLE papers ADD COLUMN parsed_pdf_path VARCHAR(500)"
+            )
+            columns_added.append("parsed_pdf_path")
+
         if "arxiv_id" not in existing_columns:
             cursor.execute("ALTER TABLE papers ADD COLUMN arxiv_id VARCHAR(100)")
             columns_added.append("arxiv_id")
@@ -153,7 +160,7 @@ def ensure_schema_current(db_path: str, silent: bool = False) -> bool:
             )
             if cursor.fetchone():
                 cursor.execute(
-                    "UPDATE alembic_version SET version_num = '3e1f8a2c9b05'"
+                    "UPDATE alembic_version SET version_num = 'a1b2c3d4e5f6'"
                 )
 
             conn.commit()
