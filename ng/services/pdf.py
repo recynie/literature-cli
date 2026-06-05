@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 import PyPDF2
 from ng.db.database import get_pdf_directory
-from ng.services import MetadataExtractor, format_file_size, http_utils
+from ng.services import format_file_size, http_utils
 from ng.services.logger import Logger, NullLogger
 from pluralizer import Pluralizer
 
@@ -639,51 +639,6 @@ class PDFDownloadHandler:
             )
 
 
-class PDFExtractionHandler:
-    """Handles PDF metadata extraction operations."""
-
-    def __init__(self, app: Logger | None, pdf_manager):
-        self.app = app or NullLogger()
-        self.pdf_manager = pdf_manager
-
-    def create_extraction_task(self, pdf_path: str) -> Callable:
-        """Create a PDF metadata extraction task."""
-
-        def extract_metadata_operation():
-            extractor = MetadataExtractor(pdf_manager=self.pdf_manager, app=self.app)
-            extracted_data = extractor.extract_from_pdf(pdf_path)
-            if not extracted_data:
-                raise Exception("No metadata could be extracted from PDF")
-            return extracted_data
-
-        return extract_metadata_operation
-
-    def create_extraction_completion_callback(
-        self, on_success: Callable[[Dict[str, Any]], None]
-    ) -> Callable:
-        """Create a callback for handling extraction completion."""
-
-        def handle_extraction_completion(
-            extracted_data: Optional[Dict[str, Any]], error: Optional[str]
-        ):
-            if error:
-                self.app.notify(
-                    f"Failed to extract metadata: {error}", severity="error"
-                )
-                return
-
-            if not extracted_data:
-                self.app.notify(
-                    "Failed to extract metadata: No data extracted",
-                    severity="error",
-                )
-                return
-
-            on_success(extracted_data)
-
-        return handle_extraction_completion
-
-
 class PDFDownloadTaskFactory:
     """Factory for creating PDF download tasks."""
 
@@ -704,15 +659,3 @@ class PDFDownloadTaskFactory:
 
         return download_task
 
-    @staticmethod
-    def create_metadata_extraction_task(
-        add_paper_service,
-        paper_id: int,
-        pdf_path: str,
-    ) -> Callable:
-        """Create a PDF metadata extraction task function."""
-
-        def extraction_task():
-            return add_paper_service.extract_and_update_pdf_metadata(paper_id, pdf_path)
-
-        return extraction_task

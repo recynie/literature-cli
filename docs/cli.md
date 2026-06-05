@@ -146,7 +146,7 @@ lit add openreview https://openreview.net/forum?id=abc123XYZ [--json]
 # DOI
 lit add doi 10.5555/3295222.3295349 [--json]
 
-# 本地 PDF（LLM 提取元数据，需要 OPENAI_API_KEY）
+# 本地 PDF（仅导入本地文件并创建最小条目）
 lit add pdf ./paper.pdf [--json]
 
 # BibTeX 文件（批量）
@@ -279,9 +279,6 @@ lit edit 42 --openalex-id "https://openalex.org/W2741809807"
 lit edit 42 --semantic-scholar-id "012345..."
 lit edit 42 --url "https://..."
 lit edit 42 --pdf-path "/path/to/paper.pdf"
-
-# LLM 重新提取 PDF 元数据（需要 OPENAI_API_KEY，论文须有关联 PDF）
-lit edit 42 --extract-pdf [--json]
 
 # 根据已有 arXiv ID / DOI / 标题补全空字段；--overwrite 覆盖已有值
 lit edit 42 --fetch [--json]
@@ -449,6 +446,10 @@ lit pdf open 42
 
 # 重新下载（支持 arXiv、OpenReview、DOI fallback、直接 PDF URL）
 lit pdf download 42 [--json]
+
+# 用 MinerU 解析已下载 PDF
+lit pdf parse 42 [--json]
+lit pdf parse 42 --force --model pipeline --extra-formats html [--json]
 ```
 
 ---

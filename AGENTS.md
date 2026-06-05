@@ -46,7 +46,7 @@ uv pip install -e ".[dev]"
 | `ng/alembic/` | Alembic schema 迁移脚本，含作者/机构 schema 变更 |
 | `ng/services/arxiv_utils.py` | arXiv 标识符集中处理：ID 清洗、从 Paper 提取 ID、判断是否 arXiv 论文、构建 PDF URL |
 | `ng/services/platform_ids.py` | 平台标识符工具：规范化/解析 arXiv、OpenReview、DBLP、OpenAlex、Semantic Scholar、ORCID，并派生平台 URL |
-| `ng/services/metadata.py` | 元数据提取：arXiv API、DBLP、OpenReview、DOI/Crossref、PDF（LLM）、BibTeX、RIS |
+| `ng/services/metadata.py` | 元数据提取：arXiv API、DBLP、OpenReview、DOI/Crossref、BibTeX、RIS；论文摘要与 DBLP venue 规范化使用 LLM |
 | `ng/services/identifier.py` | 统一导入入口 identifier 识别：文件、arXiv、DOI、OpenReview、DBLP、标题 |
 | `ng/services/openalex.py` | OpenAlex API 封装：按 DOI/标题检索 metadata、提取开放 PDF URL |
 | `ng/services/semantic_scholar.py` | Semantic Scholar API 封装：按 DOI/标题检索 metadata、提取开放 PDF URL |

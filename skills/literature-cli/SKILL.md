@@ -31,7 +31,6 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Edit metadata | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--url/--notes/--year <value> --json` |
 | Fetch missing metadata | `lit edit <id> --fetch --json` |
 | Refresh metadata with overwrite | `lit edit <id> --fetch --overwrite --json` |
-| Extract PDF metadata | `lit edit <id> --extract-pdf --json` (needs OPENAI_API_KEY) |
 | Summarize paper | `lit edit <id> --summarize --json` (needs OPENAI_API_KEY) |
 | Delete papers | `lit delete <id> --force --json` or `lit delete --ids 1,2,3 --force --json` |
 | Export citations | `lit export --format bibtex/ieee/markdown/html/json --ids 1,2 --json` |
@@ -67,6 +66,8 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 For import, prefer `lit add <identifier>` unless the user explicitly asks for a legacy subcommand. The importer detects local `.pdf` / `.bib` / `.ris` files, arXiv IDs and URLs, DOI strings and URLs, OpenReview URLs, DBLP URLs, and otherwise treats the input as a title search.
 
 PDF download uses a fallback chain when metadata is available: arXiv direct link, OpenReview direct link, Unpaywall, OpenAlex, then Semantic Scholar. PDF downloads save/link the file and, when `MINERU_API_KEY` is configured, also run MinerU parsing by default. Use `lit pdf download <id> --no-parse --json` to skip parsing. To parse an already-downloaded PDF (or to reparse with overrides), use `lit pdf parse <id> --json`.
+
+`lit add <path.pdf> --json` imports a local PDF and creates a minimal paper record. It does not perform LLM metadata extraction.
 
 ## Workflows
 

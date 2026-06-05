@@ -26,7 +26,6 @@ Skill 定义位于 `skills/literature-cli/SKILL.md`，已完整实现。
 | 编辑元数据 | `lit edit <id> --title/--venue-full/--venue-acronym/--paper-type/--doi/--arxiv-id/--openreview-id/--dblp-key/--openalex-id/--semantic-scholar-id/--url/--notes/--year <value> --json` |
 | 补全缺失元数据 | `lit edit <id> --fetch --json` |
 | 覆盖刷新元数据 | `lit edit <id> --fetch --overwrite --json` |
-| 重新提取 PDF 元数据 | `lit edit <id> --extract-pdf --json`（需要 OPENAI_API_KEY）|
 | 生成摘要写入 notes | `lit edit <id> --summarize --json`（需要 OPENAI_API_KEY）|
 | 删除论文 | `lit delete <id> --force --json` 或 `lit delete --ids 1,2,3 --force --json` |
 | 导出引用 | `lit export --format bibtex/ieee/markdown/html/json --ids 1,2 --json` |
@@ -43,6 +42,7 @@ Skill 定义位于 `skills/literature-cli/SKILL.md`，已完整实现。
 | 获取 PDF 路径 | `lit pdf path <id> --json` |
 | 打开 PDF | `lit pdf open <id>` |
 | 重新下载 PDF | `lit pdf download <id> --json` |
+| 解析 PDF | `lit pdf parse <id> --json` |
 | 数据库健康检查 | `lit db check --json` |
 | 清理孤立文件 | `lit db clean --json` |
 
@@ -172,7 +172,8 @@ lit add ./exported_refs.bib --json
 - **始终使用 `--json`** 处理命令输出，human-readable 格式不保证稳定
 - 默认 JSON 输出中的平台字段优先展示 URL；当需要数据库中的原始平台 ID/key 时，使用 `--key`
 - 默认使用 `lit add <identifier-or-path-or-title>` 导入；旧的显式来源子命令仅作为兼容用法保留在 `skills/literature-cli/references/compatibility.md`
-- `lit add <path.pdf>`、`lit edit --extract-pdf`、`lit edit --summarize` 依赖 LLM，需要 `OPENAI_API_KEY`
+- `lit edit --summarize` 依赖 LLM，需要 `OPENAI_API_KEY`
+- `lit add <path.pdf>` 仅导入本地 PDF 并创建最小条目，不会自动提取元数据
 - 导入时可通过 arXiv、OpenReview、Unpaywall、OpenAlex、Semantic Scholar fallback 自动下载 PDF，网络较慢时需等待
 - `lit add <path.bib>` / `lit add <path.ris>` 批量导入时，`errors` 字段记录失败条目，不影响其他条目
 - `lit edit --fetch` 只补空字段；只有用户明确要求覆盖时才使用 `--overwrite`

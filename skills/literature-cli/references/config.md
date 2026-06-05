@@ -24,13 +24,13 @@ General settings.
 ```toml
 [openai]
 base_url = "https://api.openai.com/v1"   # OpenAI-compatible endpoint
-model    = "gpt-4o-mini"                  # Model used for PDF extraction and summarization
+model    = "gpt-4o-mini"                  # Model used for summarization and venue normalization
 max_tokens  = 4000
 temperature = 0.7
 
 [litcli]
 data_dir  = "~/.litcli"   # Root directory for the SQLite database and downloaded PDFs
-pdf_pages = 10             # Max pages sent to the LLM when extracting PDF metadata
+pdf_pages = 10             # Max PDF pages used when generating summaries
 
 [services]
 unpaywall_email = "you@example.com"      # Optional, used for Unpaywall requests
@@ -50,7 +50,7 @@ language = "en"
 | Key | Default | Description |
 |-----|---------|-------------|
 | `openai.base_url` | `https://api.openai.com/v1` | Any OpenAI-compatible base URL (e.g. local Ollama, Azure) |
-| `openai.model` | `gpt-4o-mini` | Used by `--extract-pdf` and `--summarize`; pick a model with vision if PDFs contain figures |
+| `openai.model` | `gpt-4o-mini` | Used by `--summarize` and DBLP venue normalization |
 | `openai.max_tokens` | `4000` | Token budget for LLM responses |
 | `openai.temperature` | `0.7` | Sampling temperature |
 | `litcli.data_dir` | `~/.litcli` | Expanded at runtime; contains `papers.db` and `pdfs/` |

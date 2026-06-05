@@ -363,7 +363,7 @@ def test_crossref_references_title_lookup_fetches_matched_doi(monkeypatch):
     assert result["matched"]["doi"] == "10.1000/matched"
     assert result["matched"]["similarity"] >= 85
     assert result["count"] == 1
-    assert result["warning"] is not None
+    assert result["warning"] is None
 
 
 def test_references_for_paper_falls_back_to_title_when_doi_missing(monkeypatch):

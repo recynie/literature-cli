@@ -5,7 +5,7 @@
 ## 功能
 
 - **多来源导入**：统一 `lit add <identifier>` 自动识别 arXiv、DOI、OpenReview、DBLP、标题、本地 PDF、BibTeX、RIS；旧子命令保留
-- **智能元数据提取**：结构化 API 直接解析；PDF 和非标准来源通过 LLM 提取
+- **智能元数据提取**：结构化 API 直接解析；DBLP venue 规范化与论文摘要使用 LLM 辅助；本地 PDF 仅导入为最小条目
 - **检索与过滤**：全文搜索、模糊搜索、多字段组合过滤
 - **引用检索**：基于 Crossref 拉取单篇论文参考文献，支持 DOI 和标题匹配
 - **Collection 管理**：自定义分组，批量操作
@@ -26,7 +26,7 @@ uv pip install -e ".[dev]"
 # 全局安装，任意目录可用 lit 命令
 uv tool install .
 
-# 配置 OpenAI API key（PDF 元数据提取需要）
+# 配置 OpenAI API key（论文摘要与 DBLP venue 规范化需要）
 mkdir -p ~/.config/litcli
 cp .litcli/auth.example.toml ~/.config/litcli/auth.toml
 # 如需 MinerU 全文解析，再配置 MinerU API key
@@ -71,10 +71,10 @@ lit export --format bibtex --collection "my-papers"
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `OPENAI_API_KEY` | — | 必填，PDF 元数据提取 |
+| `OPENAI_API_KEY` | — | 可选，用于论文摘要与 DBLP venue 规范化 |
 | `OPENAI_MODEL` | `gpt-4o-mini` | LLM 模型 |
 | `LITCLI_DATA_DIR` | `~/.litcli` | 数据目录 |
-| `LITCLI_PDF_PAGES` | `10` | PDF 提取页数 |
+| `LITCLI_PDF_PAGES` | `10` | 论文摘要读取 PDF 页数 |
 | `UNPAYWALL_EMAIL` | — | Unpaywall polite email |
 | `OPENALEX_EMAIL` | — | OpenAlex polite pool email |
 | `SEMANTIC_SCHOLAR_API_KEY` | — | Semantic Scholar 可选 API key |

@@ -25,7 +25,6 @@ def edit(
     semantic_scholar_id: str | None = typer.Option(None, "--semantic-scholar-id"),
     url: str | None = typer.Option(None, "--url"),
     pdf_path: str | None = typer.Option(None, "--pdf-path"),
-    extract_pdf: bool = typer.Option(False, "--extract-pdf"),
     fetch: bool = typer.Option(False, "--fetch"),
     overwrite: bool = typer.Option(False, "--overwrite"),
     summarize: bool = typer.Option(False, "--summarize"),
@@ -58,24 +57,6 @@ def edit(
         updates = {key: value for key, value in updates.items() if value is not None}
 
         warning = ""
-        if extract_pdf:
-            if not paper.pdf_path:
-                output.error(
-                    f"Paper with ID {paper_id} has no linked PDF",
-                    "INVALID_INPUT",
-                    flag,
-                )
-            result = svc["add"].extract_and_update_pdf_metadata(
-                paper_id, paper.pdf_path
-            )
-            if not result.get("success"):
-                output.error(
-                    result.get("error") or "Failed to extract PDF metadata",
-                    "LLM_ERROR",
-                    flag,
-                )
-            paper = paper_service.get_paper_by_id(paper_id)
-
         if summarize:
             if not paper.pdf_path:
                 output.error(

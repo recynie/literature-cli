@@ -21,6 +21,7 @@ class FakePaper:
     category = "cs.CL"
     url = "https://example.test/paper"
     pdf_path = None
+    parsed_pdf_path = None
     collections = []
     added_date = None
     modified_date = None

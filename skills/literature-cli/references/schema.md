@@ -44,7 +44,8 @@
 
 - Prefer `lit add <identifier-or-path-or-title> --json` for imports. It detects PDF/BibTeX/RIS files, arXiv, DOI, OpenReview, DBLP, and title search.
 - By default, platform-backed identifier fields are exposed as URLs. Use `--key` on read/list/search/show commands to request raw IDs/keys instead.
-- `lit add <path.pdf>`, `lit edit --extract-pdf`, and `lit edit --summarize` require an OpenAI API key from the shell environment, project `.litcli/auth.toml`, or `~/.config/litcli/auth.toml`.
+- `lit edit --summarize` requires an OpenAI API key from the shell environment, project `.litcli/auth.toml`, or `~/.config/litcli/auth.toml`.
+- `lit add <path.pdf>` imports a local PDF and creates a minimal record; it does not extract PDF metadata.
 - Imports with available metadata may download PDFs through arXiv, OpenReview, Unpaywall, OpenAlex, or Semantic Scholar and may take longer on slow networks.
 - `lit add <path.bib>` and `lit add <path.ris>` return `errors` for failed entries while importing valid ones.
 - `lit edit <id> --fetch` fills missing fields only; add `--overwrite` only when the user explicitly wants remote metadata to replace existing values.

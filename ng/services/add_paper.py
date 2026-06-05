@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import re
-import shutil
 import traceback
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
@@ -355,8 +354,7 @@ class AddPaperService:
         }
 
     def add_pdf_paper_async(self, pdf_path: str) -> Dict[str, Any]:
-        """Add a paper from local PDF file (step 1: copy PDF, metadata extraction queued for background)."""
-        # Expand user path and resolve relative paths
+        """Add a paper from local PDF file by copying the file and creating a minimal record."""
         pdf_path = os.path.expanduser(pdf_path)
         pdf_path = os.path.abspath(pdf_path)
 
@@ -366,7 +364,6 @@ class AddPaperService:
         if not pdf_path.lower().endswith(".pdf"):
             raise Exception(f"File is not a PDF: {pdf_path}")
 
-        # Copy PDF first with minimal metadata for filename generation
         temp_paper_data = {
             "title": "PDF Paper",
             "authors": ["Unknown"],
@@ -374,7 +371,6 @@ class AddPaperService:
         }
 
         pdf_manager = PDFManager(app=self.app)
-        # Copy PDF to collection directory with timing
         relative_pdf_path, pdf_error = pdf_manager.process_pdf_path(
             pdf_path, temp_paper_data
         )
@@ -382,9 +378,8 @@ class AddPaperService:
         if pdf_error:
             raise Exception(f"Failed to copy PDF: {pdf_error}")
 
-        # Create minimal paper entry first (will be updated with metadata later)
         paper_data = {
-            "title": "PDF Paper (extracting metadata...)",
+            "title": "PDF Paper (imported from local file)",
             "abstract": "",
             "authors": ["Unknown"],
             "year": datetime.now().year,
@@ -398,132 +393,18 @@ class AddPaperService:
 
         paper_data = normalize_paper_data(paper_data)
 
-        # Add paper to database with minimal info
-        authors = paper_data.get("authors", [])
-        collections = []
-
         paper = self.paper_service.add_paper_from_metadata(
-            paper_data, authors, collections
+            paper_data, paper_data.get("authors", []), []
         )
 
         if self.app:
             self.app._add_log(
                 "paper_add_pdf_async",
-                f"Queued metadata extraction for PDF '{pdf_path}' after adding paper ID {paper.id}",
+                f"Added local PDF '{pdf_path}' as paper ID {paper.id}",
             )
 
         return {"paper": paper, "pdf_path": pdf_path, "paper_data": paper_data}
 
-    def extract_and_update_pdf_metadata(
-        self, paper_id: int, pdf_path: str
-    ) -> Dict[str, Any]:
-        """Background task to extract metadata from PDF and update paper record."""
-        try:
-            # Log start of extraction process
-            if self.app:
-                self.app._add_log(
-                    "pdf_metadata_extraction_start",
-                    f"Starting metadata extraction for paper_id={paper_id}, pdf_path={pdf_path}",
-                )
-
-            # Extract metadata from PDF (this is the slow LLM operation)
-            metadata = self.metadata_extractor.extract_from_pdf(pdf_path)
-
-            # Update paper with extracted metadata
-            update_data = {
-                "title": metadata.get("title", "Unknown Title"),
-                "abstract": metadata.get("abstract", ""),
-                "authors": metadata.get("authors", []),
-                "year": metadata.get("year"),
-                "venue_full": metadata.get("venue_full", ""),
-                "venue_acronym": metadata.get("venue_acronym", ""),
-                "paper_type": metadata.get("paper_type", "unknown"),
-                "doi": metadata.get("doi"),
-                "url": metadata.get("url"),
-            }
-
-            update_data = normalize_paper_data(update_data)
-
-            if self.app:
-                self.app._add_log(
-                    "pdf_metadata_update",
-                    f"Updating paper {paper_id} with extracted metadata: {list(update_data.keys())}",
-                )
-
-            updated_paper, update_error = self.paper_service.update_paper(
-                paper_id, update_data
-            )
-
-            if update_error:
-                if self.app:
-                    self.app._add_log(
-                        "pdf_metadata_error",
-                        f"Failed to update paper with metadata: {update_error}",
-                    )
-                return {
-                    "success": False,
-                    "error": f"Metadata extracted but database update failed: {update_error}",
-                }
-
-            # Rename PDF file to match extracted metadata
-            if updated_paper and updated_paper.pdf_path:
-                try:
-                    pdf_manager = PDFManager(app=self.app)
-                    old_pdf_path = pdf_manager.get_absolute_path(updated_paper.pdf_path)
-
-                    # Generate new filename with extracted metadata
-                    new_filename = pdf_manager._generate_pdf_filename(
-                        metadata, old_pdf_path
-                    )
-                    new_pdf_path = os.path.join(pdf_manager.pdf_dir, new_filename)
-
-                    # Only rename if the filename would actually change
-                    if old_pdf_path != new_pdf_path and os.path.exists(old_pdf_path):
-                        shutil.move(old_pdf_path, new_pdf_path)
-
-                        # Update database with new relative path
-                        new_relative_path = pdf_manager.get_relative_path(new_pdf_path)
-                        updated_paper, update_error = self.paper_service.update_paper(
-                            paper_id, {"pdf_path": new_relative_path}
-                        )
-
-                        if self.app:
-                            self.app._add_log(
-                                "pdf_filename_update",
-                                f"Renamed PDF file to match extracted metadata: {new_filename}",
-                            )
-
-                except Exception as e:
-                    # Don't fail the whole operation if PDF renaming fails
-                    if self.app:
-                        self.app._add_log(
-                            "pdf_rename_warning",
-                            f"Failed to rename PDF file: {str(e)}",
-                        )
-
-            if self.app:
-                self.app._add_log(
-                    "pdf_metadata_complete",
-                    f"Successfully updated paper {paper_id} with extracted metadata",
-                )
-
-            return {
-                "success": True,
-                "paper": updated_paper,
-                "extracted_metadata": metadata,
-            }
-
-        except Exception as e:
-            error_msg = f"Failed to extract and update PDF metadata: {str(e)}"
-            if self.app:
-                self.app._add_log(
-                    "pdf_metadata_exception",
-                    f"Exception in extract_and_update_pdf_metadata: {error_msg}",
-                )
-                self.app._add_log(
-                    "pdf_metadata_traceback", f"Traceback: {traceback.format_exc()}"
-                )
-            return {"success": False, "error": error_msg}
 
     def add_bib_papers(self, bib_path: str) -> Tuple[List[Paper], List[str]]:
         """Add papers from .bib file."""
@@ -704,14 +585,10 @@ class AddPaperService:
         detected = detect(raw_input)
         if detected.type == IdentifierType.PDF:
             result = self.add_pdf_paper_async(detected.value)
-            paper = result["paper"]
-            metadata_result = self.extract_and_update_pdf_metadata(paper.id, detected.value)
-            if metadata_result.get("success"):
-                paper = self.paper_service.get_paper_by_id(paper.id)
             return {
-                "paper": paper,
+                "paper": result["paper"],
                 "pdf_path": None,
-                "pdf_error": metadata_result.get("error"),
+                "pdf_error": None,
                 "identifier_type": detected.type.value,
             }
         if detected.type == IdentifierType.BIBTEX:

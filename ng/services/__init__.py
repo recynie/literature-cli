@@ -43,7 +43,6 @@ from .pdf import (
     PDFManager,
     PDFService,
     PDFDownloadHandler,
-    PDFExtractionHandler,
     PDFDownloadTaskFactory,
 )
 
@@ -81,7 +80,6 @@ __all__ = [
     "PDFManager",
     "PDFService",
     "PDFDownloadHandler",
-    "PDFExtractionHandler",
     "PDFDownloadTaskFactory",
     "SearchService",
     "SystemService",

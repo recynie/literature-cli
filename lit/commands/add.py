@@ -126,16 +126,11 @@ def pdf(ctx: typer.Context, path: str, json: bool = JSON_OPTION):
     try:
         svc = services(ctx)
         result = svc["add"].add_pdf_paper_async(path)
-        paper = result["paper"]
-        metadata_result = svc["add"].extract_and_update_pdf_metadata(
-            paper.id, os.path.abspath(os.path.expanduser(path))
-        )
-        if metadata_result.get("success") and metadata_result.get("paper"):
-            paper = svc["paper"].get_paper_by_id(paper.id)
         data = {
-            "ok": metadata_result.get("success", False),
-            "paper": output.paper_to_dict(paper),
-            "error": metadata_result.get("error"),
+            "ok": True,
+            "paper": output.paper_to_dict(result["paper"]),
+            "pdf_path": result.get("pdf_path"),
+            "error": None,
         }
         output.print_result(data, flag)
     except Exception as exc:
