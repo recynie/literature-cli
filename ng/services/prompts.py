@@ -70,13 +70,19 @@ Conclusion: Sum up the key points made about the paper's technical approach, its
 
 Please provide your analysis in clear, readable text format (not markdown). Use the exact headers provided above. Be honest about missing information rather than making assumptions.
 
+Return ONLY the final summary wrapped in XML tags exactly like this:
+<summary>
+...
+</summary>
+Do not include any other text before or after the XML.
+
 Paper text:
 {full_text[:16000]}"""
 
 
 def summary_system_message() -> str:
     """System message for summarization requests."""
-    return "You are an expert academic paper reviewer specializing in technical paper analysis and summarization. You are extremely careful to only report information that is explicitly present in the provided text and never hallucinate or make assumptions."
+    return "You are an expert academic paper reviewer specializing in technical paper analysis and summarization. You are extremely careful to only report information that is explicitly present in the provided text and never hallucinate or make assumptions. Return only the final summary inside a single <summary>...</summary> XML block with no extra text." 
 
 
 # Metadata extraction prompts

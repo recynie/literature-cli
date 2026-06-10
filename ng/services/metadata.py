@@ -43,6 +43,13 @@ def _truncate_for_logging(content: str, max_chars: int = 300) -> tuple[str, str]
     return content, f"({len(content)} chars)"
 
 
+def _extract_xml_tag_content(text: str, tag: str) -> str:
+    match = re.search(rf"<{tag}>(.*?)</{tag}>", text, re.DOTALL | re.IGNORECASE)
+    if not match:
+        return ""
+    return match.group(1).strip()
+
+
 class MetadataExtractor:
     """Service for extracting metadata from various sources."""
 
@@ -597,7 +604,15 @@ class MetadataExtractor:
                 f"Generated summary {length_info}: {truncated_content}",
             )
 
-            return summary_response
+            extracted_summary = _extract_xml_tag_content(summary_response, "summary")
+            if not extracted_summary:
+                self.app._add_log(
+                    "paper_summary_error",
+                    f"Summary response missing <summary> XML block for PDF: {pdf_path}",
+                )
+                return ""
+
+            return extracted_summary
 
         except Exception as e:
             self.app._add_log(

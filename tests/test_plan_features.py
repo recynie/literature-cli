@@ -12,6 +12,7 @@ from ng.services.platform_ids import dblp_url_from_key, openreview_url
 from ng.services.fetch import FetchMetadataService
 from ng.services.identifier import IdentifierType, detect
 from ng.services.logger import NullLogger
+from ng.services.metadata import _extract_xml_tag_content
 from ng.services.references import ReferenceError, ReferenceService
 from ng.services.system import SystemService
 
@@ -485,6 +486,12 @@ def test_references_title_match_prefers_year_and_author_hints(monkeypatch):
     assert result["matched"]["year"] == 2017
     assert result["matched"]["composite_score"] > result["matched"]["similarity"]
     assert "year/author hints" in (result["warning"] or "")
+
+
+def test_extract_xml_tag_content_returns_inner_text():
+    text = "prefix<summary>Final summary</summary>suffix"
+    assert _extract_xml_tag_content(text, "summary") == "Final summary"
+    assert _extract_xml_tag_content(text, "missing") == ""
 
 
 def test_lit_references_command_uses_service(monkeypatch):
