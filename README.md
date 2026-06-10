@@ -84,10 +84,10 @@ lit export --format bibtex --collection "my-papers"
 配置加载优先级：
 
 1. 已导出的环境变量，例如 `export OPENAI_API_KEY=...`
-2. 当前目录或父目录中的项目级 `.litcli/config.toml` / `.litcli/auth.toml`
+2. 当前工作目录及其父目录中最近的项目级 `.litcli/config.toml` / `.litcli/auth.toml`
 3. 用户级 `~/.config/litcli/config.toml` / `~/.config/litcli/auth.toml`
 
-`uv tool install` 后从任意目录运行 `lit` 时，推荐使用用户级配置文件。
+项目级配置只按当前工作目录发现，与 `lit` 安装位置无关；因此在项目目录内运行 `lit` 时，总会优先使用该项目的 `.litcli/`。需要排查命中的配置时，可运行 `lit config --json`。
 
 ## 来源
 

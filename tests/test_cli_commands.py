@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 from lit.commands import affiliation as affiliation_command
 from lit.commands import author as author_command
 from lit.commands import collect as collect_command
+from lit.commands import config as config_command
 from lit.commands import db as db_command
 from lit.commands import delete as delete_command
 from lit.commands import edit as edit_command
@@ -286,6 +287,32 @@ def test_edit_updates_fetches_and_summarizes(monkeypatch):
     assert calls["summary"] == ["files/paper.pdf"]
     assert calls["fetch"] == [(5, True)]
     assert {"title": "New", "notes": "summary"} in calls["update"]
+
+
+def test_config_command_reports_detected_files(tmp_path, monkeypatch):
+    project_dir = tmp_path / "workspace"
+    project_config_dir = project_dir / ".litcli"
+    project_config_dir.mkdir(parents=True)
+    (project_config_dir / "config.toml").write_text("[openai]\nmodel = \"project-model\"\n")
+
+    user_config_dir = tmp_path / "user-config"
+    user_config_dir.mkdir()
+    (user_config_dir / "auth.toml").write_text("[openai]\napi_key = \"secret\"\n")
+
+    monkeypatch.setattr(config_command, "USER_CONFIG_DIR", user_config_dir)
+    monkeypatch.chdir(project_dir)
+    monkeypatch.setenv("OPENAI_MODEL", "project-model")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    result = runner.invoke(config_command.app, ["--json"])
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["project_config_dir"] == str(project_config_dir)
+    assert data["files"]["project_config"] == str(project_config_dir / "config.toml")
+    assert data["files"]["user_auth"] == str(user_config_dir / "auth.toml")
+    assert data["resolved"]["OPENAI_MODEL"] == "project-model"
+    assert data["resolved"]["OPENAI_API_KEY_SET"] is False
 
 
 def test_delete_supports_multiple_ids_and_reports_count(monkeypatch):

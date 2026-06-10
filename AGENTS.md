@@ -34,6 +34,7 @@ uv pip install -e ".[dev]"
 | `.litcli/config.example.toml` | 通用配置模板（可提交）：model、base_url、data_dir、免费 API email/key 等 |
 | `.litcli/auth.example.toml` | 敏感配置模板（不可提交）：api_key |
 | `.venv/` | uv 虚拟环境（不提交） |
+| `tests/` | pytest 测试：CLI 命令、平台 ID、配置解析与其他行为回归 |
 
 ### `ng/` — 核心业务逻辑
 
@@ -80,7 +81,7 @@ uv pip install -e ".[dev]"
 | 路径 | 描述 |
 |------|------|
 | `lit/__init__.py` | CLI package init |
-| `lit/config.py` | TOML 配置加载，分 `config.toml`（通用）和 `auth.toml`（敏感），支持用户级（`~/.config/litcli/`）与项目级（`.litcli/`） |
+| `lit/config.py` | TOML 配置加载，分 `config.toml`（通用）和 `auth.toml`（敏感）；项目配置按当前工作目录向上发现，另支持用户级 `~/.config/litcli/` |
 | `lit/main.py` | typer app 入口，加载用户级与项目级配置、初始化数据库、注册所有子命令 |
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
 | `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化；默认平台 URL 输出，`--key` 可切换原始 ID/key |

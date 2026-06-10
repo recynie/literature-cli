@@ -227,8 +227,10 @@ class CliLogger:
 CLI 启动时按以下优先级加载配置，后者作为默认值，前者覆盖后者：
 
 1. 已导出的环境变量，例如 `export OPENAI_API_KEY=...`
-2. 当前目录或父目录中的项目级 `.litcli/config.toml` / `.litcli/auth.toml`
+2. 当前工作目录及其父目录中最近的项目级 `.litcli/config.toml` / `.litcli/auth.toml`
 3. 用户级 `~/.config/litcli/config.toml` / `~/.config/litcli/auth.toml`
+
+项目级配置发现只依赖当前工作目录，不依赖 `lit` 的安装位置或调用入口路径。
 
 TOML 配置示例见 `.litcli/config.example.toml` 和 `.litcli/auth.example.toml`。
 

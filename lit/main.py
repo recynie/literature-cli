@@ -17,6 +17,7 @@ from lit.commands import (
     affiliation,
     author,
     collect,
+    config,
     db,
     delete,
     edit,
@@ -51,16 +52,18 @@ def main(
         format="%(levelname)s:%(name)s:%(message)s",
     )
     db_path = _default_db_path()
-    if verbose:
-        init_database(db_path)
-    else:
-        with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
-            init_database(db_path)
     ctx.obj = {
         "json": json,
         "db_path": db_path,
         "logger": CliLogger(db_path),
     }
+    if ctx.invoked_subcommand == "config":
+        return
+    if verbose:
+        init_database(db_path)
+    else:
+        with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+            init_database(db_path)
 
 
 app.add_typer(add.app, name="add", help="Import papers from external sources.")
@@ -76,6 +79,7 @@ app.command("delete")(delete.delete)
 app.command("export")(export.export)
 app.add_typer(collect.app, name="collect", help="Manage collections.")
 app.add_typer(pdf.app, name="pdf", help="Manage local PDFs.")
+app.add_typer(config.app, name="config", help="Inspect resolved configuration.")
 app.add_typer(db.app, name="db", help="Database diagnostics and cleanup.")
 
 

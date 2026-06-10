@@ -454,6 +454,16 @@ lit pdf parse 42 --force --model pipeline --extra-formats html [--json]
 
 ---
 
+### `lit config` — 配置自检
+
+```bash
+lit config [--json]
+```
+
+显示当前工作目录命中的项目级 `.litcli/`、用户级配置文件、实际加载顺序，以及当前解析出的关键配置项。该命令只用于配置排查，不会初始化数据库。
+
+---
+
 ### `lit db` — 数据库维护
 
 ```bash

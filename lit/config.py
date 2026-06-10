@@ -4,12 +4,12 @@ Two TOML files are supported:
   config.toml  — shareable settings (model, base_url, data_dir, …)
   auth.toml    — secrets (api_key); never commit this file
 
-Both files are looked up in two locations, applied in order so that
-later values override earlier ones (env vars always win):
+Config is resolved relative to the current working directory, not the
+installation path of the ``lit`` executable:
   1. ~/.config/litcli/config.toml
   2. ~/.config/litcli/auth.toml
-  3. <project>/.litcli/config.toml
-  4. <project>/.litcli/auth.toml
+  3. <cwd-or-parent>/.litcli/config.toml
+  4. <cwd-or-parent>/.litcli/auth.toml
 """
 
 from __future__ import annotations
@@ -59,13 +59,9 @@ def find_project_config_dir(start: Path | None = None) -> Path | None:
     return None
 
 
-def load_config_files() -> None:
-    """Load config.toml and auth.toml from user and project locations.
-
-    Environment variables set before this call are never overwritten.
-    """
-    project_dir = find_project_config_dir()
-
+def config_candidates(start: Path | None = None) -> list[Path]:
+    """Return config files in increasing precedence order."""
+    project_dir = find_project_config_dir(start)
     candidates: list[Path] = [
         USER_CONFIG_DIR / CONFIG_FILENAME,
         USER_CONFIG_DIR / AUTH_FILENAME,
@@ -75,9 +71,17 @@ def load_config_files() -> None:
             project_dir / CONFIG_FILENAME,
             project_dir / AUTH_FILENAME,
         ]
+    return candidates
 
+
+def load_config_files(start: Path | None = None) -> None:
+    """Load config.toml and auth.toml from user and project locations.
+
+    Environment variables set before this call are never overwritten.
+    Project config is discovered by walking up from ``start`` or ``cwd``.
+    """
     original_env = set(os.environ)
-    for config_path in candidates:
+    for config_path in config_candidates(start):
         if not config_path.is_file():
             continue
         config = _read_toml_config(config_path)
