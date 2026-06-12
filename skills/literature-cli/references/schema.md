@@ -2,7 +2,7 @@
 
 ## JSON Objects
 
-### Paper object
+### Paper object (show / list / edit)
 
 ```json
 {
@@ -24,10 +24,35 @@
   "category": "cs.CL",
   "url": "https://arxiv.org/abs/1706.03762",
   "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
+  "parsed_pdf_path": "parsed/42/42.md",
   "collections": ["transformers"],
-  "added_date": "2024-01-01T00:00:00"
+  "added_date": "2024-01-01T00:00:00",
+  "modified_date": "2024-01-02T00:00:00"
 }
 ```
+
+### Search result object (`lit search --json`)
+
+```json
+{
+  "id": 42,
+  "title": "Attention Is All You Need",
+  "authors": ["Ashish Vaswani"],
+  "year": 2017,
+  "venue": "NeurIPS",
+  "pdf_path": "/home/user/.litcli/pdfs/vaswani2017attention.pdf",
+  "parsed_pdf_path": "parsed/42/42.md",
+  "matched_fields": {
+    "title": 1,
+    "body": 3
+  },
+  "body_match_count": 3
+}
+```
+
+The top-level response also includes `"query": "..."` for exact searches.
+
+### Collection object
 
 ### Collection object
 

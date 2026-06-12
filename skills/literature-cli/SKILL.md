@@ -22,6 +22,7 @@ Use `lit` for academic paper management. Prefer `--json` for all commands whose 
 | Bulk import RIS | `lit add <path.ris> --json` |
 | Manual entry | `lit add manual --title "..." --json` |
 | Search papers | `lit search "<query>" --json` |
+| Search in specific sources | `lit search "<query>" --in title,abstract,body --json` |
 | Fuzzy search | `lit search "<query>" --fuzzy --threshold 60 --json` |
 | Filter papers | `lit filter --author/--year/--year-range/--venue/--type/--collection/--affiliation/--query --json` |
 | List papers | `lit list --json` |

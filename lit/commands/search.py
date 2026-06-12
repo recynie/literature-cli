@@ -17,7 +17,10 @@ from lit.commands import (
 def search(
     ctx: typer.Context,
     query: str,
-    fields: str | None = typer.Option(None, "--fields", help="Comma-separated fields."),
+    in_sources: str | None = typer.Option(
+        None, "--in",
+        help="Comma-separated sources: title,abstract,authors,venue,notes,body,summary.",
+    ),
     fuzzy: bool = typer.Option(False, "--fuzzy", help="Use fuzzy matching."),
     threshold: int = typer.Option(60, "--threshold", min=0, max=100),
     key: bool = typer.Option(False, "--key", help="Show raw platform identifiers instead of derived URLs."),
@@ -28,17 +31,26 @@ def search(
         svc = services(ctx)
         if fuzzy:
             papers = svc["search"].fuzzy_search_papers(query, threshold)
+            output.print_result(
+                {
+                    "ok": True,
+                    "papers": [output.search_paper_to_dict(p, use_keys=key) for p in papers],
+                    "count": len(papers),
+                },
+                flag,
+            )
         else:
-            field_list = [item.strip() for item in fields.split(",")] if fields else None
-            papers = svc["search"].search_papers(query, field_list)
-        output.print_result(
-            {
-                "ok": True,
-                "papers": [output.paper_to_dict(paper, use_keys=key) for paper in papers],
-                "count": len(papers),
-            },
-            flag,
-        )
+            sources = [s.strip() for s in in_sources.split(",") if s.strip()] if in_sources else None
+            results = svc["search"].search_papers(query, sources)
+            output.print_result(
+                {
+                    "ok": True,
+                    "query": query,
+                    "papers": [output.search_match_to_dict(m, use_keys=key) for m in results],
+                    "count": len(results),
+                },
+                flag,
+            )
     except Exception as exc:
         handle_exception(exc, flag)
 
@@ -81,7 +93,7 @@ def filter(
         output.print_result(
             {
                 "ok": True,
-                "papers": [output.paper_to_dict(paper, use_keys=key) for paper in papers],
+                "papers": [output.paper_to_dict(p, use_keys=key) for p in papers],
                 "count": len(papers),
             },
             flag,

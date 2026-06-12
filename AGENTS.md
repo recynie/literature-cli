@@ -58,7 +58,7 @@ uv pip install -e ".[dev]"
 | `ng/services/paper.py` | 论文 CRUD，导入/更新作者时复用 Author 并可关联 Affiliation |
 | `ng/services/author.py` | 作者 CRUD、筛选、合并、查询作者论文 |
 | `ng/services/affiliation.py` | 机构 CRUD、搜索、get_or_create |
-| `ng/services/search.py` | 全文搜索、模糊搜索、多字段过滤（含 affiliation） |
+| `ng/services/search.py` | 搜索服务：`search_papers()` 支持多源搜索（title/abstract/body/notes/venue/authors/summary），返回 `SearchMatch` 含逐字段命中数；`fuzzy_search_papers()` 模糊匹配；`filter_papers()` 多条件过滤（含 affiliation） |
 | `ng/services/collection.py` | Collection 增删改查，批量添加/移除论文 |
 | `ng/services/export.py` | 导出：BibTeX、IEEE、Markdown、HTML、JSON |
 | `ng/services/mineru.py` | MinerU API 封装：`MinerUService.parse_pdf()` 提交本地 PDF、轮询结果、落盘 `.md`/`.json`/额外格式；`mineru_config_from_env()` 读取环境变量构建配置 |
@@ -84,10 +84,10 @@ uv pip install -e ".[dev]"
 | `lit/config.py` | TOML 配置加载，分 `config.toml`（通用）和 `auth.toml`（敏感）；项目配置按当前工作目录向上发现，另支持用户级 `~/.config/litcli/` |
 | `lit/main.py` | typer app 入口，加载用户级与项目级配置、初始化数据库、注册所有子命令 |
 | `lit/logger.py` | `CliLogger`，实现 `_add_log`/`notify` 接口替代 TUI app |
-| `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化；默认平台 URL 输出，`--key` 可切换原始 ID/key |
+| `lit/output.py` | JSON / human-readable 统一输出，含 Paper / Author / Affiliation / Collection 序列化；新增 `search_paper_to_dict()` / `search_match_to_dict()` 用于搜索轻量输出；human 搜索输出为列表式布局；默认平台 URL 输出，`--key` 可切换原始 ID/key |
 | `lit/commands/__init__.py` | 子命令共享 helper：service 初始化、ID 解析、错误输出 |
 | `lit/commands/add.py` | `lit add` 来源导入：统一 identifier 入口和 arXiv、DBLP、OpenReview、DOI、PDF、BibTeX、RIS、manual 子命令 |
-| `lit/commands/search.py` | `lit search` 和 `lit filter`，支持 `--affiliation` 与 `--key` |
+| `lit/commands/search.py` | `lit search`（支持 `--in title,body` 多源搜索）和 `lit filter`（多条件过滤），支持 `--key` |
 | `lit/commands/list.py` | `lit list`，支持 `--key` |
 | `lit/commands/show.py` | `lit show`，支持 `--key` |
 | `lit/commands/references.py` | `lit references`，支持按本地论文 ID、DOI 或标题检索 Crossref 参考文献 |

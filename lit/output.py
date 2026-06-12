@@ -170,8 +170,13 @@ def typer_exit(code: int):
 
 def print_human(data: Any):
     if isinstance(data, Mapping) and "papers" in data:
-        _print_paper_table(data.get("papers") or [])
-        count = data.get("count", len(data.get("papers") or []))
+        papers = data.get("papers") or []
+        # Check if these are search results (have matched_fields)
+        if papers and "matched_fields" in papers[0]:
+            _print_search_results(papers)
+        else:
+            _print_paper_table(papers)
+        count = data.get("count", len(papers))
         console.print(f"{count} paper(s)")
         if data.get("errors"):
             for item in data["errors"]:
@@ -225,6 +230,70 @@ def print_human(data: Any):
         return
 
     console.print_json(json.dumps(data, ensure_ascii=False, default=str))
+
+
+# ---------------------------------------------------------------------------
+# Search result helpers
+# ---------------------------------------------------------------------------
+
+
+def search_paper_to_dict(paper: Paper, use_keys: bool = False) -> dict[str, Any]:
+    """Convert a Paper to a lightweight search-focused dict."""
+    ordered_authors = paper.get_ordered_authors()
+    pdf_path = paper.pdf_path
+    if pdf_path:
+        try:
+            from ng.services import PDFManager
+
+            pdf_path = PDFManager().get_absolute_path(pdf_path)
+        except Exception:
+            pass
+    return {
+        "id": paper.id,
+        "title": paper.title,
+        "authors": [author.full_name for author in ordered_authors],
+        "year": paper.year,
+        "venue": paper.venue_acronym or paper.venue_full,
+        "pdf_path": pdf_path,
+        "parsed_pdf_path": paper.parsed_pdf_path,
+    }
+
+
+def search_match_to_dict(match, use_keys: bool = False) -> dict[str, Any]:
+    """Convert a SearchMatch to a search-result JSON dict."""
+    paper = match.paper
+    result = search_paper_to_dict(paper, use_keys=use_keys)
+    result["matched_fields"] = dict(match.matched_fields)
+    result["body_match_count"] = match.matched_fields.get("body", 0)
+    return result
+
+
+def _print_search_results(papers: Sequence[Mapping[str, Any]]):
+    """Print search results as a list-style layout."""
+    for i, paper in enumerate(papers):
+        if i > 0:
+            console.print("---")
+        pid = paper.get("id", "")
+        title = paper.get("title") or ""
+        authors = ", ".join(paper.get("authors") or [])
+        year = paper.get("year") or ""
+        venue = paper.get("venue") or ""
+
+        console.print(f"{pid}  |  {title}")
+        console.print(f"Authors: {authors}")
+        console.print(f"Year: {year}       Venue: {venue}")
+
+        matched = paper.get("matched_fields")
+        if matched:
+            parts = [f"{k} ({v})" for k, v in sorted(matched.items())]
+            console.print(f"Matched: {"  ".join(parts)}")
+
+        parsed = paper.get("parsed_pdf_path")
+        if parsed:
+            console.print(f"Body: {parsed}")
+        pdf = paper.get("pdf_path")
+        if pdf:
+            console.print(f"PDF:  {pdf}")
 
 
 def _print_paper_table(papers: Sequence[Mapping[str, Any]]):

@@ -153,25 +153,32 @@ def test_show_returns_not_found(monkeypatch):
 
 def test_search_routes_exact_and_fuzzy(monkeypatch):
     calls = []
-    paper = FakePaper()
+
+    class FakeMatch:
+        paper = FakePaper()
+        matched_fields = {"title": 1, "body": 3}
+
+        @property
+        def total_hits(self):
+            return sum(self.matched_fields.values())
 
     class SearchService:
-        def search_papers(self, query, fields):
-            calls.append(("exact", query, fields))
-            return [paper]
+        def search_papers(self, query, sources):
+            calls.append(("exact", query, sources))
+            return [FakeMatch()]
 
         def fuzzy_search_papers(self, query, threshold):
             calls.append(("fuzzy", query, threshold))
-            return [paper]
+            return [FakePaper()]
 
     monkeypatch.setattr(search_command, "services", lambda ctx: {"search": SearchService()})
 
     app = typer.Typer()
     app.command()(search_command.search)
 
-    result = runner.invoke(app, ["transformer", "--fields", "title,abstract", "--json"])
+    result = runner.invoke(app, ["transformer", "--in", "title,body", "--json"])
     assert result.exit_code == 0
-    assert calls[0] == ("exact", "transformer", ["title", "abstract"])
+    assert calls[0] == ("exact", "transformer", ["title", "body"])
 
     result = runner.invoke(app, ["trnsformer", "--fuzzy", "--threshold", "77", "--json"])
     assert result.exit_code == 0
